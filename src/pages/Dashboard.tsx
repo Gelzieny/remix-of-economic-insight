@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { IndicatorCard } from '@/components/dashboard/IndicatorCard';
@@ -6,7 +6,7 @@ import { InsightsPanel } from '@/components/dashboard/InsightsPanel';
 import { HistoricalChart } from '@/components/dashboard/HistoricalChart';
 import { CorrelationMatrix } from '@/components/dashboard/CorrelationMatrix';
 import { useIndicators, IndicatorType } from '@/hooks/useIndicators';
-import { useInsights } from '@/hooks/useInsights';
+import { useAIInsights } from '@/hooks/useAIInsights';
 import { CalendarDays, RefreshCw, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -17,6 +17,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useQueryClient } from '@tanstack/react-query';
 
 type PeriodFilter = '6M' | '12M' | '24M';
 
@@ -74,8 +75,9 @@ const indicatorMeta: Record<IndicatorType, { name: string; shortName: string; un
 
 export default function Dashboard() {
   const [period, setPeriod] = useState<PeriodFilter>('24M');
+  const [visibleIndicators, setVisibleIndicators] = useState<string[]>([]);
   const { data: rawIndicators, isLoading, refetch, isFetching } = useIndicators(period);
-  const { data: insights, isLoading: isLoadingInsights } = useInsights();
+  const queryClient = useQueryClient();
 
   const today = new Date().toLocaleDateString('pt-BR', {
     weekday: 'long',
@@ -139,21 +141,31 @@ export default function Dashboard() {
     });
   }, [rawIndicators]);
 
-  // Convert insights to the format expected by InsightsPanel
-  const formattedInsights = useMemo(() => {
-    if (!insights) return [];
-    return insights.map((insight) => ({
-      id: insight.id,
-      indicatorId: insight.indicator,
-      type: insight.insight_type,
-      message: `${insight.title}: ${insight.description}`,
-      severity: insight.severity,
-      date: insight.reference_date,
-    }));
-  }, [insights]);
+  // AI-powered insights based on visible indicators
+  const { 
+    data: aiInsights, 
+    isLoading: isLoadingInsights,
+    isFetching: isFetchingInsights,
+    refetch: refetchInsights
+  } = useAIInsights({
+    indicators: processedIndicators,
+    visibleIndicators: visibleIndicators.length > 0 ? visibleIndicators : undefined,
+    period,
+    enabled: processedIndicators.length > 0,
+  });
+
+  const handleVisibleIndicatorsChange = useCallback((ids: string[]) => {
+    setVisibleIndicators(ids);
+  }, []);
 
   const handleRefresh = () => {
     refetch();
+  };
+
+  const handleRefreshInsights = () => {
+    // Invalidate to force a fresh fetch
+    queryClient.invalidateQueries({ queryKey: ['ai-insights'] });
+    refetchInsights();
   };
 
   return (
@@ -232,12 +244,15 @@ export default function Dashboard() {
             <HistoricalChart 
               indicators={processedIndicators}
               period={period}
+              onVisibleIndicatorsChange={handleVisibleIndicatorsChange}
             />
           </div>
           <div>
             <InsightsPanel 
-              insights={formattedInsights} 
+              insights={aiInsights || []} 
               isLoading={isLoadingInsights}
+              onRefresh={handleRefreshInsights}
+              isRefreshing={isFetchingInsights}
             />
           </div>
         </div>

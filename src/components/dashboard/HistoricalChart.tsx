@@ -18,6 +18,7 @@ interface IndicatorData {
 interface HistoricalChartProps {
   indicators: IndicatorData[];
   period: '6M' | '12M' | '24M';
+  onVisibleIndicatorsChange?: (visibleIds: string[]) => void;
 }
 
 const chartColors = [
@@ -42,7 +43,7 @@ const normalizeData = (data: { date: string; value: number }[]) => {
   }));
 };
 
-export function HistoricalChart({ indicators, period }: HistoricalChartProps) {
+export function HistoricalChart({ indicators, period, onVisibleIndicatorsChange }: HistoricalChartProps) {
   const [visibleIndicators, setVisibleIndicators] = useState<string[]>(
     indicators.map(i => i.id)
   );
@@ -56,6 +57,11 @@ export function HistoricalChart({ indicators, period }: HistoricalChartProps) {
       return validIds.length > 0 ? validIds : newIds;
     });
   }, [indicators]);
+
+  // Notify parent of visibility changes
+  useMemo(() => {
+    onVisibleIndicatorsChange?.(visibleIndicators);
+  }, [visibleIndicators, onVisibleIndicatorsChange]);
 
   const toggleIndicator = (id: string) => {
     setVisibleIndicators(prev => {
