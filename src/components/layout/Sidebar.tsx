@@ -1,14 +1,18 @@
-import { BarChart3, User, LogOut } from 'lucide-react';
+import { BarChart3, Moon, Sun } from 'lucide-react';
 import { NavLink } from '@/components/NavLink';
 import { cn } from '@/lib/utils';
 import { mockUser } from '@/data/mockData';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { useTheme } from '@/components/theme/ThemeProvider';
+import { Switch } from '@/components/ui/switch';
 
 const navItems = [
   { icon: BarChart3, label: 'Dashboard', path: '/' },
 ];
 
 export function Sidebar() {
+  const { theme, toggleTheme } = useTheme();
+
   return (
     <aside className="fixed left-0 top-0 z-40 flex h-screen w-64 flex-col border-r border-sidebar-border bg-sidebar">
       {/* Logo */}
@@ -38,6 +42,27 @@ export function Sidebar() {
           </NavLink>
         ))}
       </nav>
+
+      {/* Theme Toggle */}
+      <div className="border-t border-sidebar-border px-4 py-3">
+        <div className="flex items-center justify-between rounded-lg bg-sidebar-accent/50 px-3 py-2">
+          <div className="flex items-center gap-2">
+            {theme === 'dark' ? (
+              <Moon className="h-4 w-4 text-sidebar-foreground/70" />
+            ) : (
+              <Sun className="h-4 w-4 text-sidebar-foreground/70" />
+            )}
+            <span className="text-sm text-sidebar-foreground/70">
+              {theme === 'dark' ? 'Modo Escuro' : 'Modo Claro'}
+            </span>
+          </div>
+          <Switch
+            checked={theme === 'dark'}
+            onCheckedChange={toggleTheme}
+            aria-label="Alternar tema"
+          />
+        </div>
+      </div>
 
       {/* User Section */}
       <div className="border-t border-sidebar-border p-3">
