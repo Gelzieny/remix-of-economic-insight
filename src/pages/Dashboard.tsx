@@ -5,7 +5,6 @@ import { IndicatorCard } from '@/components/dashboard/IndicatorCard';
 import { InsightsPanel } from '@/components/dashboard/InsightsPanel';
 import { HistoricalChart } from '@/components/dashboard/HistoricalChart';
 import { CorrelationMatrix } from '@/components/dashboard/CorrelationMatrix';
-import { AddIndicatorDialog } from '@/components/dashboard/AddIndicatorDialog';
 import { useIndicators, IndicatorType } from '@/hooks/useIndicators';
 import { useInsights } from '@/hooks/useInsights';
 import { CalendarDays, RefreshCw, Loader2 } from 'lucide-react';
@@ -203,8 +202,6 @@ export default function Dashboard() {
               )}
               Atualizar
             </Button>
-            
-            <AddIndicatorDialog />
           </div>
         </motion.div>
 
@@ -223,10 +220,9 @@ export default function Dashboard() {
           </div>
         ) : (
           <div className="rounded-lg border border-dashed border-border p-12 text-center">
-            <p className="text-muted-foreground mb-4">
-              Nenhum indicador cadastrado ainda.
+            <p className="text-muted-foreground">
+              Nenhum indicador disponível no momento.
             </p>
-            <AddIndicatorDialog />
           </div>
         )}
 
