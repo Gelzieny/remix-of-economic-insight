@@ -1,10 +1,11 @@
-import { BarChart3, Moon, Sun } from 'lucide-react';
+import { BarChart3, Moon, Sun, LogOut } from 'lucide-react';
 import { NavLink } from '@/components/NavLink';
 import { cn } from '@/lib/utils';
-import { mockUser } from '@/data/mockData';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { useTheme } from '@/components/theme/ThemeProvider';
 import { Switch } from '@/components/ui/switch';
+import { useAuth } from '@/contexts/AuthContext';
+import { Button } from '@/components/ui/button';
 
 const navItems = [
   { icon: BarChart3, label: 'Dashboard', path: '/' },
@@ -12,6 +13,9 @@ const navItems = [
 
 export function Sidebar() {
   const { theme, toggleTheme } = useTheme();
+  const { user, signOut } = useAuth();
+
+  const userInitials = user?.email?.slice(0, 2).toUpperCase() || 'U';
 
   return (
     <aside className="fixed left-0 top-0 z-40 flex h-screen w-64 flex-col border-r border-sidebar-border bg-sidebar">
@@ -66,24 +70,27 @@ export function Sidebar() {
 
       {/* User Section */}
       <div className="border-t border-sidebar-border p-3">
-        <NavLink
-          to="/perfil"
-          className={cn(
-            'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-sidebar-foreground/70 transition-all duration-200 hover:bg-sidebar-accent hover:text-sidebar-foreground'
-          )}
-          activeClassName="bg-sidebar-accent text-sidebar-primary"
-        >
+        <div className="flex items-center gap-3 rounded-lg px-3 py-2.5">
           <Avatar className="h-8 w-8">
-            <AvatarImage src={mockUser.avatar} alt={mockUser.name} />
             <AvatarFallback className="bg-primary/20 text-primary text-xs">
-              {mockUser.name.split(' ').map(n => n[0]).join('')}
+              {userInitials}
             </AvatarFallback>
           </Avatar>
-          <div className="flex-1 truncate">
-            <p className="truncate text-sm font-medium">{mockUser.name}</p>
-            <p className="truncate text-xs text-muted-foreground">{mockUser.email}</p>
+          <div className="flex-1 min-w-0">
+            <p className="truncate text-sm font-medium text-sidebar-foreground">
+              {user?.email}
+            </p>
           </div>
-        </NavLink>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={signOut}
+            className="h-8 w-8 text-sidebar-foreground/70 hover:text-destructive"
+            title="Sair"
+          >
+            <LogOut className="h-4 w-4" />
+          </Button>
+        </div>
       </div>
     </aside>
   );

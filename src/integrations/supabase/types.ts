@@ -14,13 +14,78 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      economic_indicators: {
+        Row: {
+          created_at: string
+          id: string
+          indicator: string
+          reference_date: string
+          user_id: string
+          value: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          indicator: string
+          reference_date: string
+          user_id: string
+          value: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          indicator?: string
+          reference_date?: string
+          user_id?: string
+          value?: number
+        }
+        Relationships: []
+      }
+      generated_insights: {
+        Row: {
+          created_at: string
+          description: string
+          id: string
+          indicator: string
+          insight_type: string
+          reference_date: string
+          severity: string
+          title: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          description: string
+          id?: string
+          indicator: string
+          insight_type?: string
+          reference_date: string
+          severity?: string
+          title: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          id?: string
+          indicator?: string
+          insight_type?: string
+          reference_date?: string
+          severity?: string
+          title?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      generate_indicator_insights: {
+        Args: { p_indicator: string; p_user_id: string }
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never
