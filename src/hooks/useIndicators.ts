@@ -38,6 +38,9 @@ function getDateFromPeriod(period: PeriodFilter): Date {
   return date;
 }
 
+// System user ID for automated data ingestion
+const SYSTEM_USER_ID = '00000000-0000-0000-0000-000000000000';
+
 export function useIndicators(period: PeriodFilter = '24M') {
   const { user } = useAuth();
   const startDate = getDateFromPeriod(period).toISOString().split('T')[0];
@@ -47,10 +50,11 @@ export function useIndicators(period: PeriodFilter = '24M') {
     queryFn: async () => {
       if (!user) return [];
       
+      // Fetch both user's own data and system data (from automated ingestion)
       const { data, error } = await supabase
         .from('economic_indicators')
         .select('*')
-        .eq('user_id', user.id)
+        .or(`user_id.eq.${user.id},user_id.eq.${SYSTEM_USER_ID}`)
         .gte('reference_date', startDate)
         .order('reference_date', { ascending: true });
 
@@ -75,10 +79,11 @@ export function useIndicatorsByType(indicatorType: IndicatorType, period: Period
     queryFn: async () => {
       if (!user) return [];
       
+      // Fetch both user's own data and system data
       const { data, error } = await supabase
         .from('economic_indicators')
         .select('*')
-        .eq('user_id', user.id)
+        .or(`user_id.eq.${user.id},user_id.eq.${SYSTEM_USER_ID}`)
         .eq('indicator', indicatorType)
         .gte('reference_date', startDate)
         .order('reference_date', { ascending: true });
