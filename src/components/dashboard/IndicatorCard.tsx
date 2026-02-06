@@ -1,6 +1,5 @@
 import { TrendingUp, TrendingDown, Minus, HelpCircle, BookOpen } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { Indicator } from '@/data/mockData';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import {
   Popover,
@@ -9,6 +8,21 @@ import {
 } from '@/components/ui/popover';
 import { SparklineChart } from './SparklineChart';
 import { cn } from '@/lib/utils';
+
+interface Indicator {
+  id: string;
+  name: string;
+  shortName: string;
+  value: number;
+  unit: string;
+  monthlyChange: number;
+  annualChange: number;
+  previousValue: number;
+  trend: 'up' | 'down' | 'stable';
+  description: string;
+  glossary: string;
+  historicalData: { date: string; value: number }[];
+}
 
 interface IndicatorCardProps {
   indicator: Indicator;
@@ -22,10 +36,13 @@ export function IndicatorCard({ indicator, index }: IndicatorCardProps) {
     ? TrendingDown 
     : Minus;
 
+  const invertedIndicators = ['desemprego', 'ipca', 'igpm', 'dolar'];
+  const isInverted = invertedIndicators.includes(indicator.id);
+
   const trendColor = indicator.trend === 'up'
-    ? indicator.id === 'desemprego' ? 'text-destructive' : 'text-success'
+    ? isInverted ? 'text-destructive' : 'text-success'
     : indicator.trend === 'down'
-    ? indicator.id === 'desemprego' ? 'text-success' : 'text-destructive'
+    ? isInverted ? 'text-success' : 'text-destructive'
     : 'text-muted-foreground';
 
   const changeColor = (value: number, inverted: boolean = false) => {
@@ -82,7 +99,7 @@ export function IndicatorCard({ indicator, index }: IndicatorCardProps) {
         <CardContent className="relative space-y-3">
           <div className="flex items-baseline gap-2">
             <span className="text-2xl font-bold text-foreground">
-              {indicator.id === 'cambio' ? 'R$ ' : ''}{indicator.value.toFixed(2)}
+              {indicator.id === 'dolar' ? 'R$ ' : ''}{indicator.value.toFixed(2)}
             </span>
             <span className="text-sm text-muted-foreground">{indicator.unit}</span>
           </div>
@@ -90,13 +107,13 @@ export function IndicatorCard({ indicator, index }: IndicatorCardProps) {
           <div className="flex gap-4 text-xs">
             <div>
               <span className="text-muted-foreground">Mensal: </span>
-              <span className={changeColor(indicator.monthlyChange, indicator.id === 'desemprego')}>
+              <span className={changeColor(indicator.monthlyChange, isInverted)}>
                 {formatChange(indicator.monthlyChange)}
               </span>
             </div>
             <div>
               <span className="text-muted-foreground">Anual: </span>
-              <span className={changeColor(indicator.annualChange, indicator.id === 'desemprego')}>
+              <span className={changeColor(indicator.annualChange, isInverted)}>
                 {formatChange(indicator.annualChange)}
               </span>
             </div>
@@ -106,7 +123,7 @@ export function IndicatorCard({ indicator, index }: IndicatorCardProps) {
             <SparklineChart 
               data={indicator.historicalData.slice(-12)} 
               trend={indicator.trend}
-              inverted={indicator.id === 'desemprego'}
+              inverted={isInverted}
             />
           </div>
         </CardContent>

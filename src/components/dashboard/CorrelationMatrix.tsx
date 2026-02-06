@@ -1,10 +1,60 @@
+import { useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { indicators, correlationMatrix } from '@/data/mockData';
 import { cn } from '@/lib/utils';
 
-export function CorrelationMatrix() {
+interface IndicatorData {
+  id: string;
+  shortName: string;
+  historicalData: { date: string; value: number }[];
+}
+
+interface CorrelationMatrixProps {
+  indicators: IndicatorData[];
+}
+
+// Calculate Pearson correlation coefficient
+function calculateCorrelation(x: number[], y: number[]): number {
+  const n = Math.min(x.length, y.length);
+  if (n < 2) return 0;
+
+  const xSlice = x.slice(-n);
+  const ySlice = y.slice(-n);
+
+  const sumX = xSlice.reduce((a, b) => a + b, 0);
+  const sumY = ySlice.reduce((a, b) => a + b, 0);
+  const sumXY = xSlice.reduce((acc, xi, i) => acc + xi * ySlice[i], 0);
+  const sumX2 = xSlice.reduce((acc, xi) => acc + xi * xi, 0);
+  const sumY2 = ySlice.reduce((acc, yi) => acc + yi * yi, 0);
+
+  const numerator = n * sumXY - sumX * sumY;
+  const denominator = Math.sqrt((n * sumX2 - sumX * sumX) * (n * sumY2 - sumY * sumY));
+
+  if (denominator === 0) return 0;
+  return numerator / denominator;
+}
+
+export function CorrelationMatrix({ indicators }: CorrelationMatrixProps) {
+  const correlationData = useMemo(() => {
+    const matrix: Record<string, Record<string, number>> = {};
+    
+    indicators.forEach(ind1 => {
+      matrix[ind1.id] = {};
+      indicators.forEach(ind2 => {
+        if (ind1.id === ind2.id) {
+          matrix[ind1.id][ind2.id] = 1;
+        } else {
+          const values1 = ind1.historicalData.map(d => d.value);
+          const values2 = ind2.historicalData.map(d => d.value);
+          matrix[ind1.id][ind2.id] = calculateCorrelation(values1, values2);
+        }
+      });
+    });
+    
+    return matrix;
+  }, [indicators]);
+
   const getCorrelationColor = (value: number) => {
     if (value >= 0.7) return 'bg-success/80 text-success-foreground';
     if (value >= 0.4) return 'bg-success/40 text-foreground';
@@ -24,6 +74,18 @@ export function CorrelationMatrix() {
     return 'Sem correlação significativa';
   };
 
+  if (indicators.length < 2) {
+    return (
+      <Card className="border-border/50 bg-card">
+        <CardContent className="flex h-48 items-center justify-center">
+          <p className="text-muted-foreground text-sm">
+            Adicione pelo menos 2 indicadores para ver a matriz de correlação.
+          </p>
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -42,7 +104,10 @@ export function CorrelationMatrix() {
         <CardContent>
           <div className="overflow-x-auto">
             <div className="inline-block min-w-full">
-              <div className="grid gap-1" style={{ gridTemplateColumns: `auto repeat(${indicators.length - 1}, minmax(60px, 1fr))` }}>
+              <div 
+                className="grid gap-1" 
+                style={{ gridTemplateColumns: `auto repeat(${indicators.length - 1}, minmax(60px, 1fr))` }}
+              >
                 {/* Header row */}
                 <div className="p-2" />
                 {indicators.slice(1).map(indicator => (
@@ -62,7 +127,7 @@ export function CorrelationMatrix() {
                     </div>
                     {indicators.slice(1).map((colIndicator, colIndex) => {
                       if (colIndex < rowIndex) {
-                        const correlation = (correlationMatrix as Record<string, Record<string, number>>)[rowIndicator.id]?.[colIndicator.id] ?? 0;
+                        const correlation = correlationData[rowIndicator.id]?.[colIndicator.id] ?? 0;
                         return (
                           <Tooltip key={colIndicator.id}>
                             <TooltipTrigger asChild>
