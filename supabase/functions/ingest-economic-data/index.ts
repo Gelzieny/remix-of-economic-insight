@@ -135,15 +135,25 @@ async function fetchDolar(): Promise<EconomicDataPoint[]> {
     const startDate = new Date()
     startDate.setMonth(startDate.getMonth() - 6)
     
-    const startStr = startDate.toISOString().split('T')[0].replace(/-/g, '-')
-    const endStr = endDate.toISOString().split('T')[0].replace(/-/g, '-')
+    // Format dates as MM-DD-YYYY for BCB PTAX API
+    const formatForPTAX = (d: Date) => {
+      const month = (d.getMonth() + 1).toString().padStart(2, '0')
+      const day = d.getDate().toString().padStart(2, '0')
+      const year = d.getFullYear()
+      return `${month}-${day}-${year}`
+    }
     
-    // PTAX Venda
-    const url = `https://olinda.bcb.gov.br/olinda/servico/PTAX/versao/v1/odata/CotacaoDolarPeriodo(dataInicial=@dataInicial,dataFinalCotacao=@dataFinalCotacao)?@dataInicial='${startStr.replace(/-/g, '-')}'&@dataFinalCotacao='${endStr.replace(/-/g, '-')}'&$format=json&$orderby=dataHoraCotacao%20desc`
+    const startStr = formatForPTAX(startDate)
+    const endStr = formatForPTAX(endDate)
+    
+    // PTAX Venda - using correct date format
+    const url = `https://olinda.bcb.gov.br/olinda/servico/PTAX/versao/v1/odata/CotacaoDolarPeriodo(dataInicial=@dataInicial,dataFinalCotacao=@dataFinalCotacao)?@dataInicial='${startStr}'&@dataFinalCotacao='${endStr}'&$format=json&$orderby=dataHoraCotacao%20desc`
+    
+    console.log('DOLAR URL:', url)
     
     const response = await fetch(url)
     if (!response.ok) {
-      console.error('DOLAR API error:', response.status)
+      console.error('DOLAR API error:', response.status, await response.text())
       return []
     }
     
@@ -154,9 +164,10 @@ async function fetchDolar(): Promise<EconomicDataPoint[]> {
     // Group by date and get last quote of each day
     const byDate = new Map<string, number>()
     values.forEach((item: { dataHoraCotacao: string; cotacaoVenda: number }) => {
-      const date = item.dataHoraCotacao.split(' ')[0]
-      if (!byDate.has(date) || item.cotacaoVenda) {
-        byDate.set(date, item.cotacaoVenda)
+      // dataHoraCotacao format: "2024-01-15 13:00:00.000"
+      const datePart = item.dataHoraCotacao.split(' ')[0]
+      if (item.cotacaoVenda && (!byDate.has(datePart) || item.cotacaoVenda)) {
+        byDate.set(datePart, item.cotacaoVenda)
       }
     })
     
@@ -220,45 +231,33 @@ async function fetchDesemprego(): Promise<EconomicDataPoint[]> {
   }
 }
 
-// Fetch PIB from IBGE
+// Fetch PIB from BCB (taxa de variação do PIB)
 async function fetchPIB(): Promise<EconomicDataPoint[]> {
   console.log('Fetching PIB data...')
   try {
-    // PIB trimestral - variação percentual
-    const url = `https://servicodados.ibge.gov.br/api/v3/agregados/5932/periodos/-12/variaveis/6564?localidades=N1[all]`
+    const endDate = new Date()
+    const startDate = new Date()
+    startDate.setFullYear(startDate.getFullYear() - 3)
+    
+    // PIB - Taxa de variação real trimestral (código 22109)
+    const url = `https://api.bcb.gov.br/dados/serie/bcdata.sgs.22109/dados?formato=json&dataInicial=${formatDateForBCB(startDate)}&dataFinal=${formatDateForBCB(endDate)}`
+    
+    console.log('PIB URL:', url)
     
     const response = await fetch(url)
     if (!response.ok) {
-      console.error('PIB API error:', response.status)
+      console.error('PIB API error:', response.status, await response.text())
       return []
     }
     
     const data = await response.json()
-    console.log(`PIB: received response`)
+    console.log(`PIB: received ${data.length} records from BCB`)
     
-    const results: EconomicDataPoint[] = []
-    
-    if (data && data[0] && data[0].resultados && data[0].resultados[0]) {
-      const series = data[0].resultados[0].series[0].serie
-      
-      for (const [period, value] of Object.entries(series)) {
-        if (value && value !== '...') {
-          // Period format: YYYYQQ (e.g., 202301 for Q1 2023)
-          const year = period.substring(0, 4)
-          const quarter = parseInt(period.substring(4, 6))
-          const month = (quarter * 3).toString().padStart(2, '0')
-          
-          results.push({
-            indicator: 'pib',
-            value: parseFloat(value as string),
-            reference_date: `${year}-${month}-01`,
-          })
-        }
-      }
-    }
-    
-    console.log(`PIB: parsed ${results.length} records`)
-    return results.filter((item: EconomicDataPoint) => !isNaN(item.value))
+    return data.map((item: { data: string; valor: string }) => ({
+      indicator: 'pib',
+      value: parseFloat(item.valor),
+      reference_date: brDateToISO(item.data),
+    })).filter((item: EconomicDataPoint) => !isNaN(item.value))
   } catch (error) {
     console.error('Error fetching PIB:', error)
     return []
@@ -296,32 +295,53 @@ async function fetchBalancaComercial(): Promise<EconomicDataPoint[]> {
   }
 }
 
-// Upsert data to Supabase
+// Deduplicate data by indicator + reference_date, keeping last value
+function deduplicateData(data: EconomicDataPoint[]): EconomicDataPoint[] {
+  const map = new Map<string, EconomicDataPoint>()
+  for (const item of data) {
+    const key = `${item.indicator}|${item.reference_date}`
+    map.set(key, item)
+  }
+  return Array.from(map.values())
+}
+
+// Upsert data to Supabase in batches to avoid conflicts
 async function upsertData(supabase: ReturnType<typeof createClient>, data: EconomicDataPoint[], userId: string): Promise<number> {
   if (data.length === 0) return 0
   
-  const records = data.map(item => ({
+  // Deduplicate data first
+  const uniqueData = deduplicateData(data)
+  console.log(`Upserting ${uniqueData.length} unique records (from ${data.length} total)`)
+  
+  const records = uniqueData.map(item => ({
     user_id: userId,
     indicator: item.indicator,
     value: item.value,
     reference_date: item.reference_date,
   }))
   
-  // Use upsert with conflict on user_id, indicator, reference_date
-  const { error, count } = await supabase
-    .from('economic_indicators')
-    .upsert(records, { 
-      onConflict: 'user_id,indicator,reference_date',
-      ignoreDuplicates: false 
-    })
-    .select()
+  // Batch upsert in chunks of 500 to avoid issues
+  const batchSize = 500
+  let totalInserted = 0
   
-  if (error) {
-    console.error('Upsert error:', error)
-    return 0
+  for (let i = 0; i < records.length; i += batchSize) {
+    const batch = records.slice(i, i + batchSize)
+    
+    const { error } = await supabase
+      .from('economic_indicators')
+      .upsert(batch, { 
+        onConflict: 'user_id,indicator,reference_date',
+        ignoreDuplicates: false 
+      })
+    
+    if (error) {
+      console.error('Upsert batch error:', error)
+    } else {
+      totalInserted += batch.length
+    }
   }
   
-  return records.length
+  return totalInserted
 }
 
 Deno.serve(async (req) => {
