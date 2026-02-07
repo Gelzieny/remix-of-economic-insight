@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -50,7 +51,8 @@ Formato de resposta (JSON):
 {
   "insights": [
     {
-      "message": "Texto do insight claro e objetivo",
+      "title": "Título curto do insight (max 50 caracteres)",
+      "message": "Descrição detalhada do insight",
       "type": "trend" | "alert" | "correlation",
       "severity": "info" | "warning" | "success",
       "indicators": ["indicador1", "indicador2"]
@@ -66,12 +68,65 @@ Restrições:
 - Não repetir insights redundantes
 - Quando relevante, indique o período aproximado do fenômeno`;
 
+function prepareDataSummary(activeIndicators: IndicatorData[], period: string): string {
+  return activeIndicators.map(ind => {
+    const recentData = ind.historicalData.slice(-12);
+    const firstValue = recentData[0]?.value ?? ind.value;
+    const lastValue = recentData[recentData.length - 1]?.value ?? ind.value;
+    const periodChange = firstValue !== 0 ? ((lastValue - firstValue) / firstValue) * 100 : 0;
+
+    const mean = recentData.reduce((sum, d) => sum + d.value, 0) / recentData.length;
+    const variance = recentData.reduce((sum, d) => sum + Math.pow(d.value - mean, 2), 0) / recentData.length;
+    const volatility = Math.sqrt(variance);
+
+    const last3 = recentData.slice(-3);
+    const prev3 = recentData.slice(-6, -3);
+    const recentAvg = last3.reduce((sum, d) => sum + d.value, 0) / (last3.length || 1);
+    const prevAvg = prev3.reduce((sum, d) => sum + d.value, 0) / (prev3.length || 1);
+    const shortTermTrend = prevAvg !== 0 ? ((recentAvg - prevAvg) / prevAvg) * 100 : 0;
+
+    return `
+**${ind.shortName} (${ind.name})**
+- Valor atual: ${ind.value.toFixed(2)} ${ind.unit}
+- Variação mensal: ${ind.monthlyChange.toFixed(2)}%
+- Variação no período (${period}): ${periodChange.toFixed(2)}%
+- Tendência curto prazo: ${shortTermTrend > 1 ? 'acelerando' : shortTermTrend < -1 ? 'desacelerando' : 'estável'}
+- Volatilidade: ${volatility.toFixed(2)}
+- Últimos dados: ${recentData.slice(-6).map(d => `${d.date}: ${d.value.toFixed(2)}`).join(', ')}
+`;
+  }).join('\n');
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
+    // Get user from auth header
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      return new Response(
+        JSON.stringify({ error: 'Missing authorization header', insights: [] }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const supabase = createClient(supabaseUrl, supabaseKey);
+
+    // Verify user token
+    const token = authHeader.replace('Bearer ', '');
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+    
+    if (authError || !user) {
+      return new Response(
+        JSON.stringify({ error: 'Invalid token', insights: [] }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     const body: RequestBody = await req.json();
     const { indicators, visibleIndicators, period } = body;
 
@@ -82,7 +137,6 @@ serve(async (req) => {
       );
     }
 
-    // Filter indicators based on visibility if provided
     const activeIndicators = visibleIndicators 
       ? indicators.filter(ind => visibleIndicators.includes(ind.id))
       : indicators;
@@ -94,44 +148,7 @@ serve(async (req) => {
       );
     }
 
-    // Prepare data summary for the AI
-    const dataSummary = activeIndicators.map(ind => {
-      const recentData = ind.historicalData.slice(-12); // Last 12 data points
-      const firstValue = recentData[0]?.value ?? ind.value;
-      const lastValue = recentData[recentData.length - 1]?.value ?? ind.value;
-      const periodChange = firstValue !== 0 ? ((lastValue - firstValue) / firstValue) * 100 : 0;
-
-      // Calculate volatility (standard deviation)
-      const mean = recentData.reduce((sum, d) => sum + d.value, 0) / recentData.length;
-      const variance = recentData.reduce((sum, d) => sum + Math.pow(d.value - mean, 2), 0) / recentData.length;
-      const volatility = Math.sqrt(variance);
-
-      // Detect trend direction from recent months
-      const last3 = recentData.slice(-3);
-      const prev3 = recentData.slice(-6, -3);
-      const recentAvg = last3.reduce((sum, d) => sum + d.value, 0) / (last3.length || 1);
-      const prevAvg = prev3.reduce((sum, d) => sum + d.value, 0) / (prev3.length || 1);
-      const shortTermTrend = prevAvg !== 0 ? ((recentAvg - prevAvg) / prevAvg) * 100 : 0;
-
-      return {
-        nome: ind.name,
-        sigla: ind.shortName,
-        valorAtual: `${ind.value.toFixed(2)} ${ind.unit}`,
-        variacaoMensal: `${ind.monthlyChange.toFixed(2)}%`,
-        variacaoNoPeriodo: `${periodChange.toFixed(2)}%`,
-        tendenciaCurtoPrazo: shortTermTrend > 1 ? 'acelerando' : shortTermTrend < -1 ? 'desacelerando' : 'estável',
-        volatilidade: volatility.toFixed(2),
-        ultimosDados: recentData.slice(-6).map(d => `${d.date}: ${d.value.toFixed(2)}`).join(', '),
-      };
-    }).map(d => `
-**${d.sigla} (${d.nome})**
-- Valor atual: ${d.valorAtual}
-- Variação mensal: ${d.variacaoMensal}
-- Variação no período (${period}): ${d.variacaoNoPeriodo}
-- Tendência curto prazo: ${d.tendenciaCurtoPrazo}
-- Volatilidade: ${d.volatilidade}
-- Últimos dados: ${d.ultimosDados}
-`).join('\n');
+    const dataSummary = prepareDataSummary(activeIndicators, period);
 
     const userMessage = `Analise os seguintes indicadores econômicos brasileiros no período de ${period} e gere insights:
 
@@ -184,17 +201,50 @@ Gere de 3 a 6 insights relevantes baseados nesses dados.`;
       throw new Error("Invalid JSON from AI");
     }
 
-    // Add IDs and dates to insights
+    const today = new Date().toISOString().split('T')[0];
+
+    // Delete old insights for this user (keep only recent ones)
+    await supabase
+      .from('generated_insights')
+      .delete()
+      .eq('user_id', user.id)
+      .lt('reference_date', today);
+
+    // Prepare insights for database insertion
+    const insightsToSave = (parsedInsights.insights || []).map((insight: any) => ({
+      user_id: user.id,
+      indicator: insight.indicators?.[0] || activeIndicators[0]?.id || 'general',
+      title: insight.title || insight.message.substring(0, 50),
+      description: insight.message,
+      severity: insight.severity || 'info',
+      insight_type: insight.type || 'trend',
+      reference_date: today,
+    }));
+
+    // Insert new insights into database
+    if (insightsToSave.length > 0) {
+      const { error: insertError } = await supabase
+        .from('generated_insights')
+        .insert(insightsToSave);
+
+      if (insertError) {
+        console.error('Error saving insights:', insertError);
+      } else {
+        console.log(`Saved ${insightsToSave.length} insights to database`);
+      }
+    }
+
+    // Return insights with IDs for frontend
     const insights = (parsedInsights.insights || []).map((insight: any, index: number) => ({
       id: `ai-insight-${Date.now()}-${index}`,
       message: insight.message,
       type: insight.type || 'trend',
       severity: insight.severity || 'info',
       indicatorId: insight.indicators?.[0] || activeIndicators[0]?.id || 'general',
-      date: new Date().toISOString().split('T')[0],
+      date: today,
     }));
 
-    console.log("Generated insights:", insights.length);
+    console.log("Generated and saved insights:", insights.length);
 
     return new Response(
       JSON.stringify({ insights }),
