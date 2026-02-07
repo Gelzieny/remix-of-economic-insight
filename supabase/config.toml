@@ -2,3 +2,6 @@ project_id = "trzrictfwfsmlpkbazqi"
 
 [functions.ingest-economic-data]
 verify_jwt = false
+
+[functions.generate-ai-insights]
+verify_jwt = false
