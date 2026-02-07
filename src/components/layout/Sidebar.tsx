@@ -1,4 +1,4 @@
-import { BarChart3, Moon, Sun, LogOut } from 'lucide-react';
+import { BarChart3, Newspaper, Moon, Sun, LogOut } from 'lucide-react';
 import { NavLink } from '@/components/NavLink';
 import { cn } from '@/lib/utils';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 
 const navItems = [
   { icon: BarChart3, label: 'Dashboard', path: '/' },
+  { icon: Newspaper, label: 'Notícias', path: '/noticias' },
 ];
 
 export function Sidebar() {
