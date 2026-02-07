@@ -9,6 +9,7 @@ import { useIndicators, IndicatorType } from '@/hooks/useIndicators';
 import { useAIInsights } from '@/hooks/useAIInsights';
 import { CalendarDays, RefreshCw, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { TestReportButton } from '@/components/dashboard/TestReportButton';
 import {
   Select,
   SelectContent,
@@ -188,7 +189,7 @@ export default function Dashboard() {
             </div>
           </div>
           
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 flex-wrap">
             <Select value={period} onValueChange={(v) => setPeriod(v as PeriodFilter)}>
               <SelectTrigger className="w-[120px]">
                 <SelectValue placeholder="Período" />
@@ -214,6 +215,8 @@ export default function Dashboard() {
               )}
               Atualizar
             </Button>
+
+            <TestReportButton />
           </div>
         </motion.div>
 
