@@ -96,8 +96,9 @@ export default function Auth() {
           }
         } else {
           toast({
-            title: 'Cadastro realizado!',
-            description: 'Verifique seu email para confirmar a conta.',
+            title: 'Cadastro realizado com sucesso! 🎉',
+            description: 'Enviamos um e-mail de confirmação para o endereço cadastrado. Por favor, verifique sua caixa de entrada e também a pasta de spam, caso não encontre a mensagem.',
+            duration: 10000,
           });
           setMode('login');
         }
