@@ -177,21 +177,21 @@ export default function Dashboard() {
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4 }}
-          className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between"
+          className="flex flex-col gap-4"
         >
           <div className="flex flex-col gap-1">
-            <h1 className="text-2xl font-bold text-foreground">
+            <h1 className="text-xl sm:text-2xl font-bold text-foreground">
               Indicadores Macroeconômicos
             </h1>
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <CalendarDays className="h-4 w-4" />
+            <div className="flex items-center gap-2 text-xs sm:text-sm text-muted-foreground">
+              <CalendarDays className="h-4 w-4 flex-shrink-0" />
               <span className="capitalize">{today}</span>
             </div>
           </div>
           
-          <div className="flex items-center gap-3 flex-wrap">
+          <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
             <Select value={period} onValueChange={(v) => setPeriod(v as PeriodFilter)}>
-              <SelectTrigger className="w-[120px]">
+              <SelectTrigger className="w-[110px] sm:w-[120px] min-h-[40px]">
                 <SelectValue placeholder="Período" />
               </SelectTrigger>
               <SelectContent>
@@ -206,14 +206,14 @@ export default function Dashboard() {
               size="sm"
               onClick={handleRefresh}
               disabled={isFetching}
-              className="gap-2"
+              className="gap-2 min-h-[40px]"
             >
               {isFetching ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
               ) : (
                 <RefreshCw className="h-4 w-4" />
               )}
-              Atualizar
+              <span className="hidden xs:inline">Atualizar</span>
             </Button>
 
             <TestReportButton />
