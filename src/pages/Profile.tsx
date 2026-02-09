@@ -21,7 +21,7 @@ export default function Profile() {
 
   return (
     <MainLayout>
-      <div className="mx-auto max-w-2xl space-y-6">
+      <div className="space-y-6 sm:mx-auto sm:max-w-2xl">
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: -10 }}
