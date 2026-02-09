@@ -9,6 +9,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { EconomicNewsItem } from '@/hooks/useEconomicNews';
 import { Building2, ExternalLink, TrendingUp, GraduationCap, Info } from 'lucide-react';
+import { getSourceColor } from '@/lib/sourceColors';
 
 interface NewsDetailDialogProps {
   news: EconomicNewsItem | null;
@@ -25,7 +26,7 @@ export function NewsDetailDialog({ news, open, onOpenChange }: NewsDetailDialogP
         <DialogHeader>
           {news.source_name && (
             <div className="flex items-center gap-2 mb-2">
-              <Badge variant="outline">{news.source_name}</Badge>
+              <Badge variant="outline" className={getSourceColor(news.source_name)}>{news.source_name}</Badge>
             </div>
           )}
           <DialogTitle className="text-xl leading-tight">{news.title}</DialogTitle>

@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ArrowRight, ExternalLink, AlertCircle, Newspaper } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { getSourceColor } from '@/lib/sourceColors';
 
 export default function News() {
   const [selectedNews, setSelectedNews] = useState<EconomicNewsItem | null>(null);
@@ -76,7 +77,7 @@ export default function News() {
               >
                 <CardHeader className="pb-2">
                   {item.source_name && (
-                    <Badge variant="outline" className="w-fit text-xs">
+                    <Badge variant="outline" className={`w-fit text-xs ${getSourceColor(item.source_name)}`}>
                       {item.source_name}
                     </Badge>
                   )}
