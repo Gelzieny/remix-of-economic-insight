@@ -41,6 +41,39 @@ export type Database = {
         }
         Relationships: []
       }
+      economic_news: {
+        Row: {
+          education_analysis: string | null
+          id: number
+          investor_impact: string | null
+          relevance_justification: string | null
+          source_name: string | null
+          source_url: string | null
+          summary: string | null
+          title: string
+        }
+        Insert: {
+          education_analysis?: string | null
+          id?: number
+          investor_impact?: string | null
+          relevance_justification?: string | null
+          source_name?: string | null
+          source_url?: string | null
+          summary?: string | null
+          title: string
+        }
+        Update: {
+          education_analysis?: string | null
+          id?: number
+          investor_impact?: string | null
+          relevance_justification?: string | null
+          source_name?: string | null
+          source_url?: string | null
+          summary?: string | null
+          title?: string
+        }
+        Relationships: []
+      }
       generated_insights: {
         Row: {
           created_at: string
