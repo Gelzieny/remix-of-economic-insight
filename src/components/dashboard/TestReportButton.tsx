@@ -47,7 +47,7 @@ export function TestReportButton() {
       ) : (
         <Send className="h-4 w-4" />
       )}
-      Testar Envio de Relatório
+      Envio de Relatório
     </Button>
   );
 }
