@@ -43,11 +43,16 @@ export function TestReportButton() {
       className="gap-2"
     >
       {isLoading ? (
-        <Loader2 className="h-4 w-4 animate-spin" />
+        <>
+          <Loader2 className="h-4 w-4 animate-spin" />
+          Recarregar página
+        </>
       ) : (
-        <Send className="h-4 w-4" />
+        <>
+          <Send className="h-4 w-4" />
+          Envio de Relatório
+        </>
       )}
-      Envio de Relatório
     </Button>
   );
 }
