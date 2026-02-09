@@ -213,7 +213,7 @@ export default function Dashboard() {
               ) : (
                 <RefreshCw className="h-4 w-4" />
               )}
-              <span className="hidden xs:inline">Atualizar</span>
+              <span className="hidden xs:inline">Recarregar dados</span>
             </Button>
 
             <TestReportButton />
