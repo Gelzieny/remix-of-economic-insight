@@ -31,15 +31,14 @@ export function DashboardSettingsDialog() {
   return (
     <Dialog>
       <DialogTrigger asChild>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-10 w-10 text-sidebar-foreground/70 hover:text-sidebar-foreground flex-shrink-0"
+        <button
+          className="flex w-full items-center gap-3 rounded-lg px-3 py-3 text-sm font-medium text-sidebar-foreground/70 transition-all duration-200 hover:bg-sidebar-accent hover:text-sidebar-foreground min-h-[44px]"
           title="Personalizar dashboard"
           aria-label="Personalizar dashboard"
         >
-          <Settings className="h-4 w-4" />
-        </Button>
+          <Settings className="h-5 w-5 flex-shrink-0" />
+          Configurações
+        </button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>

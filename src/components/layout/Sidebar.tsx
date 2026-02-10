@@ -1,12 +1,14 @@
-import { BarChart3, Newspaper, Moon, Sun, LogOut, Menu, X, User } from 'lucide-react';
+import { BarChart3, Newspaper, Moon, Sun, LogOut, Menu, X, User, Settings } from 'lucide-react';
 import { NavLink } from '@/components/NavLink';
 import { cn } from '@/lib/utils';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useTheme } from '@/components/theme/ThemeProvider';
 import { Switch } from '@/components/ui/switch';
 import { useAuth } from '@/contexts/AuthContext';
+import { useProfile } from '@/hooks/useProfile';
 import { Button } from '@/components/ui/button';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { Separator } from '@/components/ui/separator';
 import { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { DashboardSettingsDialog } from '@/components/dashboard/DashboardSettingsDialog';
@@ -19,11 +21,13 @@ const navItems = [
 export function Sidebar() {
   const { theme, toggleTheme } = useTheme();
   const { user, signOut } = useAuth();
+  const { profile } = useProfile();
   const isMobile = useIsMobile();
   const [mobileOpen, setMobileOpen] = useState(false);
   const location = useLocation();
 
-  const userInitials = user?.email?.slice(0, 2).toUpperCase() || 'U';
+  const displayName = profile.display_name || user?.email?.split('@')[0] || 'Usuário';
+  const userInitials = displayName.slice(0, 2).toUpperCase();
 
   // Close mobile sidebar on route change
   useEffect(() => {
@@ -106,7 +110,28 @@ export function Sidebar() {
       </div>
 
       {/* User Section */}
-      <div className="border-t border-sidebar-border p-3 space-y-1">
+      <div className="border-t border-sidebar-border p-3 space-y-2">
+        {/* Avatar + Name */}
+        <div className="flex items-center gap-3 rounded-lg px-3 py-2.5 min-h-[44px]">
+          <Avatar className="h-9 w-9 flex-shrink-0">
+            {profile.avatar_url ? (
+              <AvatarImage src={profile.avatar_url} alt="Avatar" />
+            ) : null}
+            <AvatarFallback className="bg-primary/20 text-primary text-xs">
+              {userInitials}
+            </AvatarFallback>
+          </Avatar>
+          <div className="flex-1 min-w-0">
+            <p className="truncate text-sm font-medium text-sidebar-foreground">
+              {displayName}
+            </p>
+            <p className="truncate text-xs text-sidebar-foreground/50">
+              {user?.email}
+            </p>
+          </div>
+        </div>
+
+        {/* Meu Perfil */}
         <NavLink
           to="/perfil"
           className={cn(
@@ -119,29 +144,20 @@ export function Sidebar() {
           Meu Perfil
         </NavLink>
 
-        <div className="flex items-center gap-3 rounded-lg px-3 py-2.5 min-h-[44px]">
-          <Avatar className="h-8 w-8 flex-shrink-0">
-            <AvatarFallback className="bg-primary/20 text-primary text-xs">
-              {userInitials}
-            </AvatarFallback>
-          </Avatar>
-          <div className="flex-1 min-w-0">
-            <p className="truncate text-sm font-medium text-sidebar-foreground">
-              {user?.email}
-            </p>
-          </div>
-          <DashboardSettingsDialog />
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={signOut}
-            className="h-10 w-10 text-sidebar-foreground/70 hover:text-destructive flex-shrink-0"
-            title="Sair"
-            aria-label="Sair da conta"
-          >
-            <LogOut className="h-4 w-4" />
-          </Button>
-        </div>
+        {/* Configurações */}
+        <DashboardSettingsDialog />
+
+        <Separator className="bg-sidebar-border/50" />
+
+        {/* Sair */}
+        <Button
+          variant="ghost"
+          className="w-full justify-start gap-3 px-3 py-3 min-h-[44px] text-sm font-medium text-destructive hover:bg-destructive/10 hover:text-destructive"
+          onClick={signOut}
+        >
+          <LogOut className="h-5 w-5 flex-shrink-0" />
+          Sair da Conta
+        </Button>
       </div>
     </>
   );
