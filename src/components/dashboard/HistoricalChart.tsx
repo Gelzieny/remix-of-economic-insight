@@ -18,8 +18,6 @@ interface IndicatorData {
 
 interface HistoricalChartProps {
   indicators: IndicatorData[];
-  period: '6M' | '12M' | '24M';
-  onPeriodChange?: (period: string) => void;
   onVisibleIndicatorsChange?: (visibleIds: string[]) => void;
 }
 
@@ -45,7 +43,8 @@ const normalizeData = (data: { date: string; value: number }[]) => {
   }));
 };
 
-export function HistoricalChart({ indicators, period, onPeriodChange, onVisibleIndicatorsChange }: HistoricalChartProps) {
+export function HistoricalChart({ indicators, onVisibleIndicatorsChange }: HistoricalChartProps) {
+  const [period, setPeriod] = useState<'6M' | '12M' | '24M'>('24M');
   const [visibleIndicators, setVisibleIndicators] = useState<string[]>(
     indicators.map(i => i.id)
   );
@@ -83,15 +82,27 @@ export function HistoricalChart({ indicators, period, onPeriodChange, onVisibleI
     }
   };
 
+  const filteredIndicators = useMemo(() => {
+    const monthsBack = period === '6M' ? 6 : period === '12M' ? 12 : 24;
+    const cutoff = new Date();
+    cutoff.setMonth(cutoff.getMonth() - monthsBack);
+    const cutoffStr = cutoff.toISOString().slice(0, 7);
+
+    return indicators.map(ind => ({
+      ...ind,
+      historicalData: ind.historicalData.filter(d => d.date >= cutoffStr),
+    }));
+  }, [indicators, period]);
+
   const { mergedData, trendSummary } = useMemo(() => {
-    if (indicators.length === 0) {
+    if (filteredIndicators.length === 0) {
       return { mergedData: [], trendSummary: [] };
     }
 
     const dataMap = new Map<string, Record<string, number>>();
     const originalMap = new Map<string, Record<string, number>>();
 
-    indicators.forEach(indicator => {
+    filteredIndicators.forEach(indicator => {
       const data = indicator.historicalData;
       const normalized = showNormalized 
         ? normalizeData(data) 
@@ -119,7 +130,7 @@ export function HistoricalChart({ indicators, period, onPeriodChange, onVisibleI
       }))
       .sort((a, b) => a.date.localeCompare(b.date));
 
-    const summary = indicators.map(indicator => {
+    const summary = filteredIndicators.map(indicator => {
       const data = indicator.historicalData;
       if (data.length < 2) return { id: indicator.id, trend: 'stable' as const, change: 0 };
       
@@ -135,7 +146,7 @@ export function HistoricalChart({ indicators, period, onPeriodChange, onVisibleI
     });
 
     return { mergedData: merged, trendSummary: summary };
-  }, [indicators, showNormalized]);
+  }, [filteredIndicators, showNormalized]);
 
   const getTrendIcon = (trend: 'up' | 'down' | 'stable') => {
     switch (trend) {
@@ -187,8 +198,8 @@ export function HistoricalChart({ indicators, period, onPeriodChange, onVisibleI
                 </p>
               </div>
               <div className="flex items-center gap-3">
-                {onPeriodChange && (
-                  <Select value={period} onValueChange={onPeriodChange}>
+                {(
+                  <Select value={period} onValueChange={(v) => setPeriod(v as '6M' | '12M' | '24M')}>
                     <SelectTrigger className="w-[110px] h-8 text-xs">
                       <SelectValue placeholder="Período" />
                     </SelectTrigger>
