@@ -10,14 +10,7 @@ import { useAIInsights } from '@/hooks/useAIInsights';
 import { useUserPreferences } from '@/hooks/useUserPreferences';
 import { CalendarDays, RefreshCw, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { TestReportButton } from '@/components/dashboard/TestReportButton';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+
 import { Skeleton } from '@/components/ui/skeleton';
 import { useQueryClient } from '@tanstack/react-query';
 
@@ -192,17 +185,6 @@ export default function Dashboard() {
           </div>
           
           <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
-            <Select value={period} onValueChange={(v) => setPeriod(v as PeriodFilter)}>
-              <SelectTrigger className="w-[110px] sm:w-[120px] min-h-[40px]">
-                <SelectValue placeholder="Período" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="6M">6 meses</SelectItem>
-                <SelectItem value="12M">12 meses</SelectItem>
-                <SelectItem value="24M">24 meses</SelectItem>
-              </SelectContent>
-            </Select>
-            
             <Button
               variant="outline"
               size="sm"
@@ -222,8 +204,6 @@ export default function Dashboard() {
                 </>
               )}
             </Button>
-
-            <TestReportButton />
           </div>
         </motion.div>
 
@@ -256,6 +236,7 @@ export default function Dashboard() {
             <HistoricalChart 
               indicators={processedIndicators}
               period={period}
+              onPeriodChange={(v) => setPeriod(v as PeriodFilter)}
               onVisibleIndicatorsChange={handleVisibleIndicatorsChange}
             />
           </div>
