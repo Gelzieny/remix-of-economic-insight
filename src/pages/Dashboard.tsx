@@ -9,6 +9,7 @@ import { useIndicators, IndicatorType } from '@/hooks/useIndicators';
 import { useAIInsights } from '@/hooks/useAIInsights';
 import { useUserPreferences } from '@/hooks/useUserPreferences';
 import { CalendarDays, RefreshCw, Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 
 import { Skeleton } from '@/components/ui/skeleton';
@@ -142,13 +143,21 @@ export default function Dashboard() {
     data: aiInsights, 
     isLoading: isLoadingInsights,
     isFetching: isFetchingInsights,
-    refetch: refetchInsights
+    refetch: refetchInsights,
+    error: insightsError,
   } = useAIInsights({
     indicators: processedIndicators,
     visibleIndicators: visibleIndicators.length > 0 ? visibleIndicators : undefined,
     period,
     enabled: processedIndicators.length > 0,
   });
+
+  // Show toast for AI insight errors (402, 429, etc.)
+  const insightsErrorMsg = insightsError?.message;
+  if (insightsErrorMsg) {
+    // Use a stable key to avoid duplicate toasts
+    toast.error(insightsErrorMsg, { id: 'ai-insights-error' });
+  }
 
   const handleVisibleIndicatorsChange = useCallback((ids: string[]) => {
     setVisibleIndicators(ids);
