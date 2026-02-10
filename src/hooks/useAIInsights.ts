@@ -82,9 +82,10 @@ export function useAIInsights({
       return response.data?.insights || [];
     },
     enabled: enabled && !!user && indicators.length > 0,
-    staleTime: 0, // Always consider stale so refresh works immediately
-    gcTime: 5 * 60 * 1000,
-    retry: 1,
+    staleTime: 5 * 60 * 1000, // 5 min cache to avoid hitting rate limits
+    gcTime: 10 * 60 * 1000,
+    retry: false,
     refetchOnWindowFocus: false,
+    refetchOnMount: false,
   });
 }
