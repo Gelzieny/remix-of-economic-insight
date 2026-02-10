@@ -15,7 +15,7 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useQueryClient } from '@tanstack/react-query';
 
-type PeriodFilter = '6M' | '12M' | '24M';
+
 
 const indicatorMeta: Record<IndicatorType, { name: string; shortName: string; unit: string; description: string; glossary: string }> = {
   ipca: {
@@ -70,9 +70,8 @@ const indicatorMeta: Record<IndicatorType, { name: string; shortName: string; un
 };
 
 export default function Dashboard() {
-  const [period, setPeriod] = useState<PeriodFilter>('24M');
   const [visibleIndicators, setVisibleIndicators] = useState<string[]>([]);
-  const { data: rawIndicators, isLoading, refetch, isFetching } = useIndicators(period);
+  const { data: rawIndicators, isLoading, refetch, isFetching } = useIndicators('24M');
   const queryClient = useQueryClient();
   const { selectedIndicators } = useUserPreferences();
 
@@ -148,7 +147,7 @@ export default function Dashboard() {
   } = useAIInsights({
     indicators: processedIndicators,
     visibleIndicators: visibleIndicators.length > 0 ? visibleIndicators : undefined,
-    period,
+    period: '24M',
     enabled: processedIndicators.length > 0,
   });
 
@@ -246,8 +245,6 @@ export default function Dashboard() {
           <div className="lg:col-span-2 min-w-0">
             <HistoricalChart 
               indicators={processedIndicators}
-              period={period}
-              onPeriodChange={(v) => setPeriod(v as PeriodFilter)}
               onVisibleIndicatorsChange={handleVisibleIndicatorsChange}
             />
           </div>
