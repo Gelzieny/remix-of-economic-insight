@@ -1,4 +1,4 @@
-import { BarChart3, Newspaper, Moon, Sun, LogOut, Menu, X } from 'lucide-react';
+import { BarChart3, Newspaper, Moon, Sun, LogOut, Menu, X, User } from 'lucide-react';
 import { NavLink } from '@/components/NavLink';
 import { cn } from '@/lib/utils';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -106,7 +106,19 @@ export function Sidebar() {
       </div>
 
       {/* User Section */}
-      <div className="border-t border-sidebar-border p-3">
+      <div className="border-t border-sidebar-border p-3 space-y-1">
+        <NavLink
+          to="/perfil"
+          className={cn(
+            'flex items-center gap-3 rounded-lg px-3 py-3 text-sm font-medium text-sidebar-foreground/70 transition-all duration-200 hover:bg-sidebar-accent hover:text-sidebar-foreground',
+            'min-h-[44px]'
+          )}
+          activeClassName="bg-sidebar-accent text-sidebar-primary"
+        >
+          <User className="h-5 w-5 flex-shrink-0" />
+          Meu Perfil
+        </NavLink>
+
         <div className="flex items-center gap-3 rounded-lg px-3 py-2.5 min-h-[44px]">
           <Avatar className="h-8 w-8 flex-shrink-0">
             <AvatarFallback className="bg-primary/20 text-primary text-xs">
