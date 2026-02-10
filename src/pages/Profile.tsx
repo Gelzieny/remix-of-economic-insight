@@ -1,14 +1,62 @@
+import { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
-import { LogOut, Mail, Calendar, Crown, Settings, ChevronRight } from 'lucide-react';
+import { LogOut, Mail, Calendar, Crown, Settings, ChevronRight, FileText } from 'lucide-react';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 export default function Profile() {
   const { user, signOut } = useAuth();
+  const [reportEnabled, setReportEnabled] = useState(false);
+  const [loadingReport, setLoadingReport] = useState(true);
+
+  const fetchSubscription = useCallback(async () => {
+    if (!user) return;
+    const { data } = await supabase
+      .from('subscribers')
+      .select('active')
+      .eq('user_id', user.id)
+      .maybeSingle();
+    setReportEnabled(data?.active ?? false);
+    setLoadingReport(false);
+  }, [user]);
+
+  useEffect(() => { fetchSubscription(); }, [fetchSubscription]);
+
+  const toggleReport = async (checked: boolean) => {
+    if (!user) return;
+    setReportEnabled(checked);
+    const { data: existing } = await supabase
+      .from('subscribers')
+      .select('id')
+      .eq('user_id', user.id)
+      .maybeSingle();
+
+    let error;
+    if (existing) {
+      ({ error } = await supabase.from('subscribers').update({ active: checked }).eq('user_id', user.id));
+    } else {
+      ({ error } = await supabase.from('subscribers').insert({
+        user_id: user.id,
+        email: user.email!,
+        name: user.email!.split('@')[0],
+        active: checked,
+      }));
+    }
+    if (error) {
+      setReportEnabled(!checked);
+      toast.error('Erro ao atualizar preferência de relatório.');
+    } else {
+      toast.success(checked ? 'Relatório Econômico ativado!' : 'Relatório Econômico desativado.');
+    }
+  };
 
   const userInitials = user?.email?.slice(0, 2).toUpperCase() || 'U';
   const joinedDate = user?.created_at 
@@ -134,7 +182,31 @@ export default function Profile() {
                 Preferências
               </CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="space-y-4">
+              <div className="flex items-center justify-between gap-4">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-muted">
+                    <FileText className="h-5 w-5 text-muted-foreground" />
+                  </div>
+                  <div>
+                    <Label htmlFor="report-toggle" className="text-sm font-medium text-foreground cursor-pointer">
+                      Relatório Econômico
+                    </Label>
+                    <p className="text-xs text-muted-foreground">
+                      Receber relatório diário por e-mail
+                    </p>
+                  </div>
+                </div>
+                <Switch
+                  id="report-toggle"
+                  checked={reportEnabled}
+                  onCheckedChange={toggleReport}
+                  disabled={loadingReport}
+                />
+              </div>
+
+              <Separator className="bg-border/50" />
+
               <Button variant="ghost" className="w-full justify-between">
                 <div className="flex items-center gap-3">
                   <Settings className="h-5 w-5 text-muted-foreground" />
