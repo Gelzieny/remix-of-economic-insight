@@ -63,8 +63,21 @@ export function useAIInsights({
       });
 
       if (response.error) {
-        console.error('Error generating AI insights:', response.error);
-        throw new Error(response.error.message || 'Failed to generate insights');
+        // Try to parse the error body for user-friendly messages (402/429)
+        try {
+          const errorBody = typeof response.error === 'object' && 'context' in response.error
+            ? await (response.error as any).context?.json?.()
+            : null;
+          const msg = errorBody?.error || response.error.message || 'Failed to generate insights';
+          console.error('Error generating AI insights:', msg);
+          throw new Error(msg);
+        } catch (parseErr) {
+          if (parseErr instanceof Error && parseErr.message !== 'Failed to generate insights') {
+            throw parseErr;
+          }
+          console.error('Error generating AI insights:', response.error);
+          throw new Error(response.error.message || 'Failed to generate insights');
+        }
       }
 
       return response.data?.insights || [];

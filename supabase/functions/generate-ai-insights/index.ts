@@ -232,6 +232,19 @@ Gere de 3 a 6 insights relevantes baseados nesses dados.`;
     if (!response.ok) {
       const error = await response.text();
       console.error("AI Gateway error:", error);
+      
+      if (response.status === 402) {
+        return new Response(
+          JSON.stringify({ error: "Créditos de IA insuficientes. Adicione créditos em Settings > Workspace > Usage.", insights: [] }),
+          { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      if (response.status === 429) {
+        return new Response(
+          JSON.stringify({ error: "Limite de requisições excedido. Tente novamente em alguns minutos.", insights: [] }),
+          { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
       throw new Error(`AI Gateway error: ${response.status}`);
     }
 
