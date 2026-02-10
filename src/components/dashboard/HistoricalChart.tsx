@@ -76,7 +76,7 @@ export function HistoricalChart({ indicators, onVisibleIndicatorsChange }: Histo
 
   const toggleAll = () => {
     if (visibleIndicators.length === indicators.length) {
-      setVisibleIndicators([indicators[0]?.id].filter(Boolean));
+      setVisibleIndicators([]);
     } else {
       setVisibleIndicators(indicators.map(i => i.id));
     }
