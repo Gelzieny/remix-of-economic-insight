@@ -7,6 +7,7 @@ import { HistoricalChart } from '@/components/dashboard/HistoricalChart';
 import { CorrelationMatrix } from '@/components/dashboard/CorrelationMatrix';
 import { useIndicators, IndicatorType } from '@/hooks/useIndicators';
 import { useAIInsights } from '@/hooks/useAIInsights';
+import { useUserPreferences } from '@/hooks/useUserPreferences';
 import { CalendarDays, RefreshCw, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { TestReportButton } from '@/components/dashboard/TestReportButton';
