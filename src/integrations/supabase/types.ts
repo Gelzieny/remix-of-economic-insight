@@ -110,6 +110,96 @@ export type Database = {
         }
         Relationships: []
       }
+      grupo3_price_alerts: {
+        Row: {
+          created_at: string
+          crypto_id: string
+          crypto_name: string
+          crypto_symbol: string
+          current_price: number
+          id: string
+          is_active: boolean
+          target_price: number
+          type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          crypto_id: string
+          crypto_name: string
+          crypto_symbol: string
+          current_price?: number
+          id?: string
+          is_active?: boolean
+          target_price: number
+          type: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          crypto_id?: string
+          crypto_name?: string
+          crypto_symbol?: string
+          current_price?: number
+          id?: string
+          is_active?: boolean
+          target_price?: number
+          type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      grupo3_profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          email: string | null
+          full_name: string | null
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          email?: string | null
+          full_name?: string | null
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          email?: string | null
+          full_name?: string | null
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      grupo3_watchlist: {
+        Row: {
+          created_at: string
+          crypto_id: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          crypto_id: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          crypto_id?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null

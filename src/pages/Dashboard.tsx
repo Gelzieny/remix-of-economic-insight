@@ -6,6 +6,7 @@ import { InsightsPanel } from '@/components/dashboard/InsightsPanel';
 import { HistoricalChart } from '@/components/dashboard/HistoricalChart';
 import { CorrelationMatrix } from '@/components/dashboard/CorrelationMatrix';
 import { useIndicators, IndicatorType } from '@/hooks/useIndicators';
+import { supabase } from '@/integrations/supabase/client';
 import { useAIInsights } from '@/hooks/useAIInsights';
 import { useUserPreferences } from '@/hooks/useUserPreferences';
 import { CalendarDays, RefreshCw, Loader2 } from 'lucide-react';
@@ -162,8 +163,27 @@ export default function Dashboard() {
     setVisibleIndicators(ids);
   }, []);
 
-  const handleRefresh = () => {
-    refetch();
+  const [isIngesting, setIsIngesting] = useState(false);
+
+  const handleRefresh = async () => {
+    setIsIngesting(true);
+    try {
+      const { error } = await supabase.functions.invoke('ingest-economic-data', {
+        body: { indicators: ['all'] },
+      });
+      if (error) {
+        console.error('Ingestion error:', error);
+        toast.error('Erro ao consultar APIs de indicadores');
+      } else {
+        toast.success('Dados atualizados com sucesso!');
+      }
+    } catch (err) {
+      console.error('Ingestion error:', err);
+      toast.error('Erro ao atualizar dados');
+    } finally {
+      await refetch();
+      setIsIngesting(false);
+    }
   };
 
   const handleRefreshInsights = async () => {
@@ -199,13 +219,13 @@ export default function Dashboard() {
               variant="outline"
               size="sm"
               onClick={handleRefresh}
-              disabled={isFetching}
+              disabled={isIngesting}
               className="gap-2 min-h-[40px]"
             >
-              {isFetching ? (
+              {isIngesting ? (
                 <>
                   <Loader2 className="h-4 w-4 animate-spin" />
-                  Recarregar página
+                  Atualizando dados...
                 </>
               ) : (
                 <>
