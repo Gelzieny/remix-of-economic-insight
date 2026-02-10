@@ -118,6 +118,7 @@ export function Sidebar() {
               {user?.email}
             </p>
           </div>
+          <DashboardSettingsDialog />
           <Button
             variant="ghost"
             size="icon"

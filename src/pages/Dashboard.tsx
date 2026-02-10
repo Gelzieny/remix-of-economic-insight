@@ -80,6 +80,7 @@ export default function Dashboard() {
   const [visibleIndicators, setVisibleIndicators] = useState<string[]>([]);
   const { data: rawIndicators, isLoading, refetch, isFetching } = useIndicators(period);
   const queryClient = useQueryClient();
+  const { selectedIndicators } = useUserPreferences();
 
   const today = new Date().toLocaleDateString('pt-BR', {
     weekday: 'long',
