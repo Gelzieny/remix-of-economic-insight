@@ -61,7 +61,7 @@ Formato de resposta (JSON):
 }
 
 Restrições:
-- Gere entre 3 e 6 insights
+- Gere exatamente 3 insights
 - Cada insight deve ser curto, direto e interpretável por um usuário não técnico
 - Não inventar dados
 - Não usar previsões
@@ -205,7 +205,7 @@ ${dataSummary}
 
 Indicadores ativos para análise: ${activeIndicators.map(i => i.shortName).join(', ')}
 
-Gere de 3 a 6 insights relevantes baseados nesses dados.`;
+Gere exatamente 3 insights relevantes baseados nesses dados.`;
 
     const apiKey = Deno.env.get("GEMINI_API_KEY");
     if (!apiKey) {
@@ -302,7 +302,7 @@ Gere de 3 a 6 insights relevantes baseados nesses dados.`;
     }
 
     // Return insights with IDs for frontend
-    const insights = (parsedInsights.insights || []).map((insight: any, index: number) => ({
+    const insights = (parsedInsights.insights || []).slice(0, 3).map((insight: any, index: number) => ({
       id: `ai-insight-${Date.now()}-${index}`,
       message: insight.message,
       type: insight.type || 'trend',
