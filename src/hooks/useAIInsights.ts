@@ -63,7 +63,6 @@ export function useAIInsights({
       });
 
       if (response.error) {
-        // Try to parse the error body for user-friendly messages (402/429)
         try {
           const errorBody = typeof response.error === 'object' && 'context' in response.error
             ? await (response.error as any).context?.json?.()
@@ -83,8 +82,8 @@ export function useAIInsights({
       return response.data?.insights || [];
     },
     enabled: enabled && !!user && indicators.length > 0,
-    staleTime: 2 * 60 * 1000, // 2 minutes - insights are relatively stable
-    gcTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: 0, // Always consider stale so refresh works immediately
+    gcTime: 5 * 60 * 1000,
     retry: 1,
     refetchOnWindowFocus: false,
   });
