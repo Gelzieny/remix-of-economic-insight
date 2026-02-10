@@ -236,9 +236,11 @@ export default function Dashboard() {
           </div>
         ) : processedIndicators.length > 0 ? (
           <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {processedIndicators.map((indicator, index) => (
-              <IndicatorCard key={indicator.id} indicator={indicator} index={index} />
-            ))}
+            {processedIndicators
+              .filter((ind) => selectedIndicators.includes(ind.id as IndicatorType))
+              .map((indicator, index) => (
+                <IndicatorCard key={indicator.id} indicator={indicator} index={index} />
+              ))}
           </div>
         ) : (
           <div className="rounded-lg border border-dashed border-border p-12 text-center">
