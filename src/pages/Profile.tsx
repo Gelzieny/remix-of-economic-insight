@@ -1,21 +1,46 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { LogOut, Mail, Calendar, Crown, Settings, ChevronRight, FileText } from 'lucide-react';
+import { LogOut, Mail, Calendar, Settings, ChevronRight, FileText, Camera, KeyRound, Pencil, Check, X } from 'lucide-react';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
+import { useProfile } from '@/hooks/useProfile';
 import { toast } from 'sonner';
 
 export default function Profile() {
   const { user, signOut } = useAuth();
+  const { profile, loading: profileLoading, saving, updateDisplayName, uploadAvatar, changePassword } = useProfile();
+
+  // Report subscription
   const [reportEnabled, setReportEnabled] = useState(false);
   const [loadingReport, setLoadingReport] = useState(true);
+
+  // Inline name editing
+  const [editingName, setEditingName] = useState(false);
+  const [nameValue, setNameValue] = useState('');
+
+  // Password change
+  const [showPassword, setShowPassword] = useState(false);
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Sync name value when profile loads
+  useEffect(() => {
+    if (profile.display_name !== null) {
+      setNameValue(profile.display_name);
+    } else if (user?.email) {
+      setNameValue(user.email.split('@')[0]);
+    }
+  }, [profile.display_name, user?.email]);
 
   const fetchSubscription = useCallback(async () => {
     if (!user) return;
@@ -58,8 +83,44 @@ export default function Profile() {
     }
   };
 
-  const userInitials = user?.email?.slice(0, 2).toUpperCase() || 'U';
-  const joinedDate = user?.created_at 
+  const handleSaveName = async () => {
+    if (!nameValue.trim()) return;
+    await updateDisplayName(nameValue.trim());
+    setEditingName(false);
+  };
+
+  const handleAvatarClick = () => fileInputRef.current?.click();
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error('A imagem deve ter no máximo 2MB.');
+      return;
+    }
+    uploadAvatar(file);
+  };
+
+  const handleChangePassword = async () => {
+    if (newPassword.length < 6) {
+      toast.error('A senha deve ter pelo menos 6 caracteres.');
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      toast.error('As senhas não coincidem.');
+      return;
+    }
+    const success = await changePassword(newPassword);
+    if (success) {
+      setNewPassword('');
+      setConfirmPassword('');
+      setShowPassword(false);
+    }
+  };
+
+  const displayName = profile.display_name || user?.email?.split('@')[0] || 'Usuário';
+  const userInitials = displayName.slice(0, 2).toUpperCase();
+  const joinedDate = user?.created_at
     ? new Date(user.created_at).toLocaleDateString('pt-BR', {
         year: 'numeric',
         month: 'long',
@@ -71,43 +132,65 @@ export default function Profile() {
     <MainLayout>
       <div className="space-y-6 sm:mx-auto sm:max-w-2xl">
         {/* Header */}
-        <motion.div
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4 }}
-        >
+        <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
           <h1 className="text-2xl font-bold text-foreground">Meu Perfil</h1>
-          <p className="text-sm text-muted-foreground">
-            Gerencie suas informações pessoais e configurações
-          </p>
+          <p className="text-sm text-muted-foreground">Gerencie suas informações pessoais e configurações</p>
         </motion.div>
 
         {/* Profile Card */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4, delay: 0.1 }}
-        >
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.1 }}>
           <Card className="border-border/50 bg-card">
             <CardContent className="p-6">
               <div className="flex flex-col items-center gap-6 sm:flex-row">
-                <Avatar className="h-24 w-24 border-4 border-primary/20">
-                  <AvatarFallback className="bg-primary/20 text-primary text-2xl">
-                    {userInitials}
-                  </AvatarFallback>
-                </Avatar>
-                
-                <div className="flex-1 text-center sm:text-left">
-                  <h2 className="text-xl font-semibold text-foreground">
-                    {user?.email?.split('@')[0] || 'Usuário'}
-                  </h2>
-                  <p className="text-sm text-muted-foreground">{user?.email}</p>
-                  <div className="mt-2 flex items-center justify-center gap-2 sm:justify-start">
-                    <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-medium text-primary">
-                      <Crown className="h-3 w-3" />
-                      Plano Gratuito
-                    </span>
+                {/* Avatar with upload */}
+                <div className="relative group cursor-pointer" onClick={handleAvatarClick}>
+                  <Avatar className="h-24 w-24 border-4 border-primary/20">
+                    {profile.avatar_url ? (
+                      <AvatarImage src={profile.avatar_url} alt="Avatar" />
+                    ) : null}
+                    <AvatarFallback className="bg-primary/20 text-primary text-2xl">
+                      {userInitials}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="absolute inset-0 flex items-center justify-center rounded-full bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <Camera className="h-6 w-6 text-white" />
                   </div>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleFileChange}
+                  />
+                </div>
+
+                {/* Name + email */}
+                <div className="flex-1 text-center sm:text-left">
+                  {editingName ? (
+                    <div className="flex items-center gap-2">
+                      <Input
+                        value={nameValue}
+                        onChange={(e) => setNameValue(e.target.value)}
+                        className="h-9 max-w-[200px]"
+                        autoFocus
+                        onKeyDown={(e) => e.key === 'Enter' && handleSaveName()}
+                      />
+                      <Button size="icon" variant="ghost" className="h-8 w-8" onClick={handleSaveName} disabled={saving}>
+                        <Check className="h-4 w-4 text-primary" />
+                      </Button>
+                      <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => setEditingName(false)}>
+                        <X className="h-4 w-4 text-muted-foreground" />
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="flex items-center justify-center gap-2 sm:justify-start">
+                      <h2 className="text-xl font-semibold text-foreground">{displayName}</h2>
+                      <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => setEditingName(true)}>
+                        <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
+                      </Button>
+                    </div>
+                  )}
+                  <p className="text-sm text-muted-foreground mt-1">{user?.email}</p>
                 </div>
               </div>
             </CardContent>
@@ -115,16 +198,10 @@ export default function Profile() {
         </motion.div>
 
         {/* Account Info */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4, delay: 0.2 }}
-        >
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.2 }}>
           <Card className="border-border/50 bg-card">
             <CardHeader>
-              <CardTitle className="text-base font-semibold">
-                Informações da Conta
-              </CardTitle>
+              <CardTitle className="text-base font-semibold">Informações da Conta</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex items-center gap-4">
@@ -145,42 +222,71 @@ export default function Profile() {
                 </div>
                 <div className="flex-1">
                   <p className="text-xs text-muted-foreground">Membro desde</p>
-                  <p className="text-sm font-medium text-foreground">
-                    {joinedDate}
-                  </p>
+                  <p className="text-sm font-medium text-foreground">{joinedDate}</p>
                 </div>
               </div>
 
               <Separator className="bg-border/50" />
 
-              <div className="flex items-center gap-4">
-                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-muted">
-                  <Crown className="h-5 w-5 text-muted-foreground" />
+              {/* Password change */}
+              <div>
+                <div className="flex items-center gap-4">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-muted">
+                    <KeyRound className="h-5 w-5 text-muted-foreground" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-xs text-muted-foreground">Senha</p>
+                    <p className="text-sm font-medium text-foreground">••••••••</p>
+                  </div>
+                  <Button variant="ghost" size="sm" className="gap-1 text-primary" onClick={() => setShowPassword(!showPassword)}>
+                    {showPassword ? 'Cancelar' : 'Alterar'}
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
                 </div>
-                <div className="flex-1">
-                  <p className="text-xs text-muted-foreground">Plano Atual</p>
-                  <p className="text-sm font-medium text-foreground">Gratuito</p>
-                </div>
-                <Button variant="ghost" size="sm" className="gap-1 text-primary">
-                  Alterar
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
+
+                {showPassword && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    className="mt-4 space-y-3 pl-14"
+                  >
+                    <div>
+                      <Label htmlFor="new-password" className="text-xs text-muted-foreground">Nova senha</Label>
+                      <Input
+                        id="new-password"
+                        type="password"
+                        value={newPassword}
+                        onChange={(e) => setNewPassword(e.target.value)}
+                        placeholder="Mínimo 6 caracteres"
+                        className="mt-1"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="confirm-password" className="text-xs text-muted-foreground">Confirmar senha</Label>
+                      <Input
+                        id="confirm-password"
+                        type="password"
+                        value={confirmPassword}
+                        onChange={(e) => setConfirmPassword(e.target.value)}
+                        placeholder="Repita a senha"
+                        className="mt-1"
+                      />
+                    </div>
+                    <Button size="sm" onClick={handleChangePassword} disabled={saving}>
+                      Salvar nova senha
+                    </Button>
+                  </motion.div>
+                )}
               </div>
             </CardContent>
           </Card>
         </motion.div>
 
-        {/* Settings */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4, delay: 0.3 }}
-        >
+        {/* Preferences */}
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.3 }}>
           <Card className="border-border/50 bg-card">
             <CardHeader>
-              <CardTitle className="text-base font-semibold">
-                Preferências
-              </CardTitle>
+              <CardTitle className="text-base font-semibold">Preferências</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex items-center justify-between gap-4">
@@ -192,9 +298,7 @@ export default function Profile() {
                     <Label htmlFor="report-toggle" className="text-sm font-medium text-foreground cursor-pointer">
                       Relatório Econômico
                     </Label>
-                    <p className="text-xs text-muted-foreground">
-                      Receber relatório diário por e-mail
-                    </p>
+                    <p className="text-xs text-muted-foreground">Receber relatório diário por e-mail</p>
                   </div>
                 </div>
                 <Switch
@@ -204,26 +308,12 @@ export default function Profile() {
                   disabled={loadingReport}
                 />
               </div>
-
-              <Separator className="bg-border/50" />
-
-              <Button variant="ghost" className="w-full justify-between">
-                <div className="flex items-center gap-3">
-                  <Settings className="h-5 w-5 text-muted-foreground" />
-                  <span>Configurações</span>
-                </div>
-                <ChevronRight className="h-4 w-4 text-muted-foreground" />
-              </Button>
             </CardContent>
           </Card>
         </motion.div>
 
-        {/* Logout Button */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4, delay: 0.4 }}
-        >
+        {/* Logout */}
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.4 }}>
           <Button
             variant="outline"
             className="w-full border-destructive/30 text-destructive hover:bg-destructive/10 hover:text-destructive"
