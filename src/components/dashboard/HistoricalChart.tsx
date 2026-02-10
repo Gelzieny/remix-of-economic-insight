@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
 import { TrendingUp, TrendingDown, Minus, Eye, EyeOff } from 'lucide-react';
 
@@ -18,6 +19,7 @@ interface IndicatorData {
 interface HistoricalChartProps {
   indicators: IndicatorData[];
   period: '6M' | '12M' | '24M';
+  onPeriodChange?: (period: string) => void;
   onVisibleIndicatorsChange?: (visibleIds: string[]) => void;
 }
 
@@ -43,7 +45,7 @@ const normalizeData = (data: { date: string; value: number }[]) => {
   }));
 };
 
-export function HistoricalChart({ indicators, period, onVisibleIndicatorsChange }: HistoricalChartProps) {
+export function HistoricalChart({ indicators, period, onPeriodChange, onVisibleIndicatorsChange }: HistoricalChartProps) {
   const [visibleIndicators, setVisibleIndicators] = useState<string[]>(
     indicators.map(i => i.id)
   );
@@ -184,7 +186,19 @@ export function HistoricalChart({ indicators, period, onVisibleIndicatorsChange 
                     : 'Valores absolutos dos indicadores'}
                 </p>
               </div>
-              <div className="flex items-center gap-4">
+              <div className="flex items-center gap-3">
+                {onPeriodChange && (
+                  <Select value={period} onValueChange={onPeriodChange}>
+                    <SelectTrigger className="w-[110px] h-8 text-xs">
+                      <SelectValue placeholder="Período" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="6M">6 meses</SelectItem>
+                      <SelectItem value="12M">12 meses</SelectItem>
+                      <SelectItem value="24M">24 meses</SelectItem>
+                    </SelectContent>
+                  </Select>
+                )}
                 <div className="flex items-center gap-2">
                   <Switch
                     id="normalize"
