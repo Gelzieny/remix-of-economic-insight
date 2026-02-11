@@ -1,0 +1,796 @@
+openapi: 3.0.3
+info:
+  title: Economic Insight API
+  description: |
+    API para análise de indicadores econômicos brasileiros com insights gerados por IA.
+    
+    ## Arquitetura
+    
+    As APIs são implementadas como Supabase Edge Functions (Deno runtime) e incluem:
+    - Coleta automatizada de dados econômicos de fontes oficiais
+    - Geração de insights inteligentes usando OpenAI
+    - Geração de relatórios consolidados
+    
+    ## Autenticação
+    
+    A maioria dos endpoints requer autenticação via JWT token do Supabase.
+    
+    ```
+    Authorization: Bearer <supabase_jwt_token>
+    ```
+  version: 1.0.0
+  contact:
+    name: Economic Insight Team
+    email: support@economicinsight.com
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: https://trzrictfwfsmlpkbazqi.supabase.co/functions/v1
+    description: Produção (Supabase)
+  - url: http://localhost:54321/functions/v1
+    description: Desenvolvimento Local
+
+tags:
+  - name: AI Insights
+    description: Endpoints para geração de insights usando IA
+  - name: Data Ingestion
+    description: Endpoints para coleta de dados econômicos
+  - name: Reports
+    description: Endpoints para geração de relatórios
+
+paths:
+  /generate-ai-insights:
+    post:
+      tags:
+        - AI Insights
+      summary: Gerar insights automáticos usando IA
+      description: |
+        Analisa indicadores econômicos fornecidos e gera exatamente 3 insights relevantes
+        usando o modelo GPT-4o-mini da OpenAI. Os insights são salvos no banco de dados
+        e retornados para exibição no dashboard.
+        
+        **Características:**
+        - Análise de tendências de curto e médio prazo
+        - Detecção de correlações entre indicadores
+        - Identificação de eventos atípicos
+        - Retry automático em caso de rate limiting (429)
+      operationId: generateAIInsights
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GenerateInsightsRequest'
+            examples:
+              complete:
+                summary: Request completo com todos os indicadores
+                value:
+                  indicators:
+                    - id: "selic"
+                      name: "Taxa Selic"
+                      shortName: "Selic"
+                      value: 11.75
+                      unit: "% a.a."
+                      monthlyChange: 0.0
+                      annualChange: 2.25
+                      trend: "stable"
+                      historicalData:
+                        - date: "2024-01-01"
+                          value: 11.75
+                        - date: "2024-02-01"
+                          value: 11.75
+                    - id: "ipca"
+                      name: "Inflação (IPCA)"
+                      shortName: "IPCA"
+                      value: 4.62
+                      unit: "% a.a."
+                      monthlyChange: -0.09
+                      annualChange: -0.38
+                      trend: "down"
+                      historicalData:
+                        - date: "2024-01-01"
+                          value: 4.62
+                        - date: "2024-02-01"
+                          value: 4.51
+                  visibleIndicators:
+                    - "selic"
+                    - "ipca"
+                    - "dolar"
+                  period: "últimos 12 meses"
+              minimal:
+                summary: Request mínimo com 2 indicadores
+                value:
+                  indicators:
+                    - id: "selic"
+                      name: "Taxa Selic"
+                      shortName: "Selic"
+                      value: 11.75
+                      unit: "% a.a."
+                      monthlyChange: 0.0
+                      annualChange: 2.25
+                      trend: "stable"
+                      historicalData:
+                        - date: "2024-01-01"
+                          value: 11.75
+                    - id: "ipca"
+                      name: "IPCA"
+                      shortName: "IPCA"
+                      value: 4.62
+                      unit: "% a.a."
+                      monthlyChange: -0.09
+                      annualChange: -0.38
+                      trend: "down"
+                      historicalData:
+                        - date: "2024-01-01"
+                          value: 4.62
+                  period: "6 meses"
+      responses:
+        '200':
+          description: Insights gerados com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InsightsResponse'
+              examples:
+                success:
+                  summary: Resposta bem-sucedida
+                  value:
+                    insights:
+                      - id: "ai-insight-1707696000000-0"
+                        message: "A taxa Selic permanece estável em 11,75% a.a. há dois meses, indicando manutenção da postura contracionista do Copom para controle inflacionário."
+                        type: "trend"
+                        severity: "info"
+                        indicatorId: "selic"
+                        date: "2024-02-11"
+                      - id: "ai-insight-1707696000000-1"
+                        message: "IPCA apresenta desaceleração nos últimos meses, caindo de 4,62% para 4,51% a.a., sinalizando arrefecimento das pressões inflacionárias."
+                        type: "trend"
+                        severity: "success"
+                        indicatorId: "ipca"
+                        date: "2024-02-11"
+                      - id: "ai-insight-1707696000000-2"
+                        message: "Correlação negativa entre Selic estável e IPCA em queda sugere eficácia da política monetária no controle da inflação."
+                        type: "correlation"
+                        severity: "info"
+                        indicatorId: "selic"
+                        date: "2024-02-11"
+        '401':
+          description: Token de autenticação inválido ou ausente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                missing_token:
+                  summary: Token ausente
+                  value:
+                    error: "Missing authorization header"
+                    insights: []
+                invalid_token:
+                  summary: Token inválido
+                  value:
+                    error: "Invalid token"
+                    insights: []
+        '429':
+          description: Rate limit da OpenAI excedido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: "A API da OpenAI está temporariamente indisponível por excesso de uso. Aguarde 1-2 minutos e tente novamente."
+                insights: []
+        '500':
+          description: Erro interno do servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: "OpenAI API error: 500"
+                insights: []
+
+  /ingest-economic-data:
+    post:
+      tags:
+        - Data Ingestion
+      summary: Coletar dados econômicos de fontes oficiais
+      description: |
+        Coleta dados econômicos de múltiplas fontes oficiais brasileiras:
+        - **Banco Central do Brasil (BCB):** SELIC, PIB, Balança Comercial, Dólar (PTAX)
+        - **Ipeadata (IPEA):** IPCA, IGP-M
+        - **IBGE:** Taxa de Desemprego
+        
+        Os dados são automaticamente salvos no banco Supabase com deduplicação
+        por `user_id + indicator + reference_date`.
+        
+        **Batch Processing:**
+        - Upserts em lotes de 500 registros
+        - Período padrão: 2 anos de histórico
+        - Sem autenticação requerida (função de sistema)
+      operationId: ingestEconomicData
+      security: []
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IngestDataRequest'
+            examples:
+              all_indicators:
+                summary: Coletar todos os indicadores
+                value:
+                  indicators:
+                    - "all"
+              specific_indicators:
+                summary: Coletar indicadores específicos
+                value:
+                  indicators:
+                    - "selic"
+                    - "ipca"
+                    - "dolar"
+              empty:
+                summary: Request vazio (coleta todos)
+                value: {}
+      responses:
+        '200':
+          description: Dados coletados e salvos com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IngestDataResponse'
+              examples:
+                success:
+                  summary: Coleta bem-sucedida de todos os indicadores
+                  value:
+                    success: true
+                    message: "Data ingestion complete"
+                    results:
+                      selic: 145
+                      ipca: 24
+                      igpm: 24
+                      dolar: 180
+                      desemprego: 24
+                      pib: 12
+                      balanca_comercial: 24
+                partial_success:
+                  summary: Coleta parcial (alguns falharam)
+                  value:
+                    success: true
+                    message: "Data ingestion complete"
+                    results:
+                      selic: 145
+                      ipca: 0
+                      igpm: 24
+                      dolar: 180
+        '500':
+          description: Erro durante a coleta de dados
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                success: false
+                error: "Network timeout while fetching BCB data"
+
+  /send-dashboard-report:
+    post:
+      tags:
+        - Reports
+      summary: Gerar relatório consolidado do dashboard
+      description: |
+        Gera um relatório consolidado com todos os indicadores econômicos dos últimos 24 meses,
+        incluindo análises estatísticas e tendências.
+        
+        **Características:**
+        - Agrupa dados por indicador
+        - Calcula variações mensais e de período
+        - Identifica tendências (alta/queda/estável)
+        - Formato otimizado para integração com n8n/automações
+        
+        **Modes:**
+        - `test`: Execução manual para testes
+        - `scheduled`: Execução via cron job
+      operationId: sendDashboardReport
+      security: []
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReportRequest'
+            examples:
+              test_mode:
+                summary: Modo de teste
+                value:
+                  mode: "test"
+              scheduled_mode:
+                summary: Modo agendado
+                value:
+                  mode: "scheduled"
+              empty:
+                summary: Request vazio (modo test padrão)
+                value: {}
+      responses:
+        '200':
+          description: Relatório gerado com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DashboardReportResponse'
+              examples:
+                full_report:
+                  summary: Relatório completo
+                  value:
+                    success: true
+                    mode: "test"
+                    report_date: "2026-02-11T12:00:00.000Z"
+                    report_title: "Relatório Macroeconômico - 11/02/2026"
+                    total_indicators: 7
+                    summary:
+                      - indicador: "Balança Comercial"
+                        valor_atual: 6.234
+                        unidade: "US$ bi"
+                        data_referencia: "2026-01-01"
+                        variacao_mensal_pct: 2.15
+                        variacao_periodo_pct: 12.45
+                        tendencia: "alta"
+                        valor_anterior: 6.103
+                        total_registros: 24
+                      - indicador: "Dólar (USD/BRL)"
+                        valor_atual: 4.9524
+                        unidade: "R$"
+                        data_referencia: "2026-02-10"
+                        variacao_mensal_pct: -1.23
+                        variacao_periodo_pct: -5.67
+                        tendencia: "queda"
+                        valor_anterior: 5.0145
+                        total_registros: 180
+                      - indicador: "IGP-M"
+                        valor_atual: 3.89
+                        unidade: "% a.a."
+                        data_referencia: "2026-01-01"
+                        variacao_mensal_pct: -0.52
+                        variacao_periodo_pct: -1.12
+                        tendencia: "queda"
+                        valor_anterior: 3.91
+                        total_registros: 24
+                      - indicador: "Inflação (IPCA)"
+                        valor_atual: 4.51
+                        unidade: "% a.a."
+                        data_referencia: "2026-01-01"
+                        variacao_mensal_pct: -0.09
+                        variacao_periodo_pct: -0.38
+                        tendencia: "estável"
+                        valor_anterior: 4.62
+                        total_registros: 24
+                      - indicador: "PIB"
+                        valor_atual: 2.89
+                        unidade: "% a.a."
+                        data_referencia: "2025-10-01"
+                        variacao_mensal_pct: 0.45
+                        variacao_periodo_pct: 1.23
+                        tendencia: "estável"
+                        valor_anterior: 2.86
+                        total_registros: 12
+                      - indicador: "Taxa de Desemprego"
+                        valor_atual: 7.6
+                        unidade: "%"
+                        data_referencia: "2025-12-01"
+                        variacao_mensal_pct: -2.56
+                        variacao_periodo_pct: -5.00
+                        tendencia: "queda"
+                        valor_anterior: 7.8
+                        total_registros: 24
+                      - indicador: "Taxa Selic"
+                        valor_atual: 11.75
+                        unidade: "% a.a."
+                        data_referencia: "2026-01-31"
+                        variacao_mensal_pct: 0.0
+                        variacao_periodo_pct: 2.25
+                        tendencia: "estável"
+                        valor_anterior: 11.75
+                        total_registros: 145
+                    detailed_data:
+                      selic:
+                        name: "Taxa Selic"
+                        unit: "% a.a."
+                        records:
+                          - value: 11.75
+                            reference_date: "2026-01-31"
+                          - value: 11.75
+                            reference_date: "2026-01-15"
+                      ipca:
+                        name: "Inflação (IPCA)"
+                        unit: "% a.a."
+                        records:
+                          - value: 4.51
+                            reference_date: "2026-01-01"
+                          - value: 4.62
+                            reference_date: "2025-12-01"
+                no_data:
+                  summary: Sem dados disponíveis
+                  value:
+                    success: true
+                    mode: "test"
+                    message: "No indicator data found"
+                    report_date: "2026-02-11T12:00:00.000Z"
+                    indicators: []
+                    summary: []
+        '500':
+          description: Erro ao gerar relatório
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                success: false
+                error: "Database connection failed"
+                mode: "error"
+                report_date: "2026-02-11T12:00:00.000Z"
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Token JWT do Supabase obtido após autenticação
+
+  schemas:
+    # Request Schemas
+    GenerateInsightsRequest:
+      type: object
+      required:
+        - indicators
+        - period
+      properties:
+        indicators:
+          type: array
+          description: Lista de indicadores econômicos com seus dados históricos
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/IndicatorData'
+        visibleIndicators:
+          type: array
+          description: IDs dos indicadores visíveis no dashboard (opcional - se omitido, usa todos)
+          items:
+            type: string
+            enum: [selic, ipca, igpm, pib, dolar, balanca_comercial, desemprego]
+          example: ["selic", "ipca", "dolar"]
+        period:
+          type: string
+          description: Período de análise em linguagem natural
+          example: "últimos 12 meses"
+
+    IndicatorData:
+      type: object
+      required:
+        - id
+        - name
+        - shortName
+        - value
+        - unit
+        - monthlyChange
+        - annualChange
+        - trend
+        - historicalData
+      properties:
+        id:
+          type: string
+          description: Identificador único do indicador
+          enum: [selic, ipca, igpm, pib, dolar, balanca_comercial, desemprego]
+        name:
+          type: string
+          description: Nome completo do indicador
+          example: "Taxa Selic"
+        shortName:
+          type: string
+          description: Nome curto para exibição
+          example: "Selic"
+        value:
+          type: number
+          format: double
+          description: Valor atual do indicador
+          example: 11.75
+        unit:
+          type: string
+          description: Unidade de medida
+          example: "% a.a."
+        monthlyChange:
+          type: number
+          format: double
+          description: Variação percentual mensal
+          example: 0.0
+        annualChange:
+          type: number
+          format: double
+          description: Variação percentual anual
+          example: 2.25
+        trend:
+          type: string
+          enum: [up, down, stable]
+          description: Tendência atual do indicador
+        historicalData:
+          type: array
+          description: Dados históricos (mínimo 6 pontos recomendado)
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/HistoricalDataPoint'
+
+    HistoricalDataPoint:
+      type: object
+      required:
+        - date
+        - value
+      properties:
+        date:
+          type: string
+          format: date
+          description: Data do ponto de dados (ISO 8601)
+          example: "2024-01-01"
+        value:
+          type: number
+          format: double
+          description: Valor do indicador na data
+          example: 11.75
+
+    IngestDataRequest:
+      type: object
+      properties:
+        indicators:
+          type: array
+          description: Lista de indicadores a serem coletados (ou ["all"] para todos)
+          items:
+            type: string
+            enum: [all, selic, ipca, igpm, pib, dolar, balanca_comercial, desemprego]
+          default: ["all"]
+        user_id:
+          type: string
+          format: uuid
+          description: ID do usuário (opcional - usa SYSTEM_USER_ID se omitido)
+
+    ReportRequest:
+      type: object
+      properties:
+        mode:
+          type: string
+          enum: [test, scheduled]
+          default: test
+          description: Modo de execução do relatório
+
+    # Response Schemas
+    InsightsResponse:
+      type: object
+      required:
+        - insights
+      properties:
+        insights:
+          type: array
+          description: Lista de insights gerados (sempre 3 ou 0 se erro)
+          maxItems: 3
+          items:
+            $ref: '#/components/schemas/Insight'
+
+    Insight:
+      type: object
+      required:
+        - id
+        - message
+        - type
+        - severity
+        - indicatorId
+        - date
+      properties:
+        id:
+          type: string
+          description: Identificador único do insight
+          example: "ai-insight-1707696000000-0"
+        message:
+          type: string
+          description: Texto do insight
+          example: "A taxa Selic permanece estável há dois meses"
+        type:
+          type: string
+          enum: [trend, alert, correlation]
+          description: Tipo de insight
+        severity:
+          type: string
+          enum: [info, warning, success]
+          description: Nível de severidade para UI
+        indicatorId:
+          type: string
+          enum: [selic, ipca, igpm, pib, dolar, balanca_comercial, desemprego]
+          description: Indicador principal relacionado
+        date:
+          type: string
+          format: date
+          description: Data de referência do insight
+
+    IngestDataResponse:
+      type: object
+      required:
+        - success
+        - message
+      properties:
+        success:
+          type: boolean
+          description: Se a operação foi bem-sucedida
+        message:
+          type: string
+          description: Mensagem descritiva
+          example: "Data ingestion complete"
+        results:
+          type: object
+          description: Contagem de registros inseridos por indicador
+          additionalProperties:
+            type: integer
+          example:
+            selic: 145
+            ipca: 24
+            dolar: 180
+
+    DashboardReportResponse:
+      type: object
+      required:
+        - success
+        - mode
+        - report_date
+      properties:
+        success:
+          type: boolean
+          description: Se o relatório foi gerado com sucesso
+        mode:
+          type: string
+          enum: [test, scheduled, error]
+          description: Modo de execução
+        report_date:
+          type: string
+          format: date-time
+          description: Data/hora de geração do relatório
+        report_title:
+          type: string
+          description: Título do relatório
+          example: "Relatório Macroeconômico - 11/02/2026"
+        total_indicators:
+          type: integer
+          description: Número total de indicadores no relatório
+        message:
+          type: string
+          description: Mensagem adicional (apenas se sem dados)
+        summary:
+          type: array
+          description: Resumo estatístico de cada indicador
+          items:
+            $ref: '#/components/schemas/IndicatorSummary'
+        detailed_data:
+          type: object
+          description: Dados detalhados por indicador (últimos 6 registros)
+          additionalProperties:
+            $ref: '#/components/schemas/DetailedIndicatorData'
+
+    IndicatorSummary:
+      type: object
+      required:
+        - indicador
+        - valor_atual
+        - unidade
+        - data_referencia
+        - variacao_mensal_pct
+        - variacao_periodo_pct
+        - tendencia
+        - total_registros
+      properties:
+        indicador:
+          type: string
+          description: Nome do indicador
+          example: "Taxa Selic"
+        valor_atual:
+          type: number
+          format: double
+          description: Valor mais recente
+          example: 11.75
+        unidade:
+          type: string
+          description: Unidade de medida
+          example: "% a.a."
+        data_referencia:
+          type: string
+          format: date
+          description: Data do valor atual
+        variacao_mensal_pct:
+          type: number
+          format: double
+          description: Variação percentual em relação ao mês anterior
+          example: 0.0
+        variacao_periodo_pct:
+          type: number
+          format: double
+          description: Variação percentual no período total
+          example: 2.25
+        tendencia:
+          type: string
+          enum: [alta, queda, estável]
+          description: Tendência atual
+        valor_anterior:
+          type: number
+          format: double
+          nullable: true
+          description: Valor do período anterior
+        total_registros:
+          type: integer
+          description: Total de registros históricos
+          example: 145
+
+    DetailedIndicatorData:
+      type: object
+      required:
+        - name
+        - unit
+        - records
+      properties:
+        name:
+          type: string
+          description: Nome do indicador
+        unit:
+          type: string
+          description: Unidade de medida
+        records:
+          type: array
+          description: Últimos 6 registros
+          maxItems: 6
+          items:
+            type: object
+            required:
+              - value
+              - reference_date
+            properties:
+              value:
+                type: number
+                format: double
+              reference_date:
+                type: string
+                format: date
+
+    ErrorResponse:
+      type: object
+      required:
+        - error
+      properties:
+        error:
+          type: string
+          description: Mensagem de erro
+        insights:
+          type: array
+          description: Array vazio de insights (apenas em generate-ai-insights)
+          items:
+            type: object
+        success:
+          type: boolean
+          description: False (apenas em ingest-economic-data e send-dashboard-report)
+        mode:
+          type: string
+          description: Modo de execução quando aplicável
+
+  examples:
+    SelicIndicator:
+      value:
+        id: "selic"
+        name: "Taxa Selic"
+        shortName: "Selic"
+        value: 11.75
+        unit: "% a.a."
+        monthlyChange: 0.0
+        annualChange: 2.25
+        trend: "stable"
+        historicalData:
+          - date: "2024-01-01"
+            value: 11.75
+          - date: "2024-02-01"
+            value: 11.75
+          - date: "2024-03-01"
+            value: 11.75

@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Economic Insight API - Swagger UI</title>
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5.10.5/swagger-ui.css">
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+        }
+        
+        .swagger-ui .topbar {
+            background-color: #1a1a1a;
+            border-bottom: 3px solid #10b981;
+        }
+        
+        .swagger-ui .info .title {
+            color: #10b981;
+        }
+        
+        .swagger-ui .scheme-container {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        
+        .custom-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px 20px;
+            text-align: center;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        
+        .custom-header h1 {
+            margin: 0;
+            font-size: 2.5em;
+            font-weight: 700;
+        }
+        
+        .custom-header p {
+            margin: 10px 0 0;
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+        
+        .info-banner {
+            background: #eff6ff;
+            border-left: 4px solid #3b82f6;
+            padding: 15px 20px;
+            margin: 20px;
+            border-radius: 4px;
+        }
+        
+        .info-banner h3 {
+            margin-top: 0;
+            color: #1e40af;
+        }
+        
+        .info-banner ul {
+            margin: 10px 0;
+            padding-left: 20px;
+        }
+        
+        .info-banner code {
+            background: #dbeafe;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+        }
+        
+        #swagger-ui {
+            max-width: 1460px;
+            margin: 0 auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="custom-header">
+        <h1>🚀 Economic Insight API</h1>
+        <p>Documentação interativa das Supabase Edge Functions</p>
+    </div>
+    
+    <div class="info-banner">
+        <h3>ℹ️ Informações Importantes</h3>
+        <ul>
+            <li><strong>Ambiente de Produção:</strong> <code>https://trzrictfwfsmlpkbazqi.supabase.co/functions/v1</code></li>
+            <li><strong>Ambiente Local:</strong> <code>http://localhost:54321/functions/v1</code></li>
+            <li><strong>Autenticação:</strong> A maioria dos endpoints requer JWT token do Supabase no header <code>Authorization: Bearer &lt;token&gt;</code></li>
+            <li><strong>Data Externa APIs:</strong> BCB, Ipeadata, IBGE (dados oficiais brasileiros)</li>
+            <li><strong>AI Engine:</strong> OpenAI GPT-4o-mini para geração de insights</li>
+        </ul>
+    </div>
+
+    <div id="swagger-ui"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5.10.5/swagger-ui-bundle.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5.10.5/swagger-ui-standalone-preset.js"></script>
+    <script>
+        window.onload = function() {
+            // Carrega o arquivo swagger.yaml
+            const ui = SwaggerUIBundle({
+                url: './swagger.yaml',
+                dom_id: '#swagger-ui',
+                deepLinking: true,
+                presets: [
+                    SwaggerUIBundle.presets.apis,
+                    SwaggerUIStandalonePreset
+                ],
+                plugins: [
+                    SwaggerUIBundle.plugins.DownloadUrl
+                ],
+                layout: "StandaloneLayout",
+                defaultModelsExpandDepth: 1,
+                defaultModelExpandDepth: 1,
+                docExpansion: 'list',
+                filter: true,
+                showExtensions: true,
+                showCommonExtensions: true,
+                tryItOutEnabled: true,
+                requestSnippetsEnabled: true,
+                syntaxHighlight: {
+                    activate: true,
+                    theme: 'monokai'
+                },
+                // Configurações de UI
+                displayOperationId: true,
+                displayRequestDuration: true,
+                // Validação
+                validatorUrl: null,
+                // Configuração de servidores
+                onComplete: function() {
+                    console.log('✅ Swagger UI carregado com sucesso!');
+                    console.log('📚 Documentação das Supabase Edge Functions');
+                    console.log('🔗 Baseado em: swagger.yaml');
+                }
+            });
+
+            window.ui = ui;
+        };
+    </script>
+</body>
+</html>
