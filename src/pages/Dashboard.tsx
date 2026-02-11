@@ -182,6 +182,7 @@ export default function Dashboard() {
       toast.error('Erro ao atualizar dados');
     } finally {
       await refetch();
+      queryClient.invalidateQueries({ queryKey: ['ai-insights'] });
       setIsIngesting(false);
     }
   };
