@@ -180,32 +180,44 @@ Gere exatamente 3 insights relevantes baseados nesses dados. Responda APENAS com
       throw new Error("GEMINI_API_KEY not configured");
     }
 
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
+    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`;
+    const geminiBody = JSON.stringify({
+      contents: [
+        { role: "user", parts: [{ text: SYSTEM_PROMPT + "\n\n" + userMessage }] },
+      ],
+      generationConfig: {
+        temperature: 0.7,
+        maxOutputTokens: 2048,
       },
-      body: JSON.stringify({
-        contents: [
-          { role: "user", parts: [{ text: SYSTEM_PROMPT + "\n\n" + userMessage }] },
-        ],
-        generationConfig: {
-          temperature: 0.7,
-          maxOutputTokens: 2048,
-        },
-      }),
     });
 
-    if (!response.ok) {
-      if (response.status === 429) {
+    // Retry with exponential backoff for rate limits
+    let response: Response | null = null;
+    const maxRetries = 3;
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+      response = await fetch(geminiUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: geminiBody,
+      });
+
+      if (response.status !== 429 || attempt === maxRetries) break;
+
+      const delay = Math.pow(2, attempt + 1) * 1000; // 2s, 4s, 8s
+      console.log(`Rate limited (429), retrying in ${delay}ms (attempt ${attempt + 1}/${maxRetries})`);
+      await new Promise(resolve => setTimeout(resolve, delay));
+    }
+
+    if (!response!.ok) {
+      if (response!.status === 429) {
         return new Response(
-          JSON.stringify({ error: "Limite de requisições excedido. Tente novamente em alguns minutos.", insights: [] }),
+          JSON.stringify({ error: "Limite de requisições excedido após múltiplas tentativas. Tente novamente em alguns minutos.", insights: [] }),
           { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
-      const errText = await response.text();
-      console.error("Gemini API error:", response.status, errText);
-      throw new Error(`Gemini API error: ${response.status}`);
+      const errText = await response!.text();
+      console.error("Gemini API error:", response!.status, errText);
+      throw new Error(`Gemini API error: ${response!.status}`);
     }
 
     const aiResponse = await response.json();
