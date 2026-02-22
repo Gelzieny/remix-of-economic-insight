@@ -1,73 +1,64 @@
-# Welcome to your Lovable project
+<h1  align="center">
+ 📊 Economic Insights
+</h1>
 
-## Project info
+Plataforma web para visualização de indicadores macroeconômicos brasileiros, análise comparativa, matriz de correlação e acompanhamento de notícias econômicas.
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+Interface moderna em modo escuro, com dashboards interativos e geração futura de insights com IA.
 
-## How can I edit this code?
+## 🎓 Sobre o Projeto
 
-There are several ways of editing your application.
+Este projeto foi desenvolvido durante o programa DiverseDEV, da Ada, em parceria com o Mercado Eletrônico — uma imersão prática em desenvolvimento, low-code e construção de produto com visão estratégica.
 
-**Use Lovable**
+Ao longo do programa, aplicamos conceitos de engenharia de software, análise de dados, automação e desenvolvimento de produto para construir uma solução completa, do frontend às integrações com backend e IA.
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
 
-Changes made via Lovable will be committed automatically to this repo.
+## 🌐 Acesso à Aplicação
 
-**Use your preferred IDE**
+👉 **Produção:**  
+[https://remix-of-economic-insight.vercel.app/](https://remix-of-economic-insight.vercel.app/)
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+## 📸 Preview do Projeto
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+<p align="center">
+  <img src=".github/img/login.png" alt="Tela de Login" width="400"/>
+  <img src=".github/img/dashboard_1.png" alt="Tela de Dashboard" width="400"/>
+  <img src=".github/img/noticias.png" alt="Tela de Noticias" width="400"/>
+  <img src=".github/img/meu_perfil.png" alt="Tela de Perfil do usuário" width="400"/>
+</p>
 
-Follow these steps:
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+## 🚀 Funcionalidades
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
-```
-
-**Edit a file directly in GitHub**
-
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
-
-**Use GitHub Codespaces**
-
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
-
-## What technologies are used for this project?
-
-This project is built with:
-
+- React 18
 - Vite
 - TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+- TailwindCSS
+- Lovable
+- Supabase (autenticação e backend)
 
-## How can I deploy this project?
 
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
+### **Crie issues no seu repositório**
+   
+  - Acesse o repositório no GitHub
+  - Crie issues com a label `published`
+  - Escreva o conteúdo dos posts em Markdown
 
-## Can I connect a custom domain to my Lovable project?
 
-Yes, you can!
+## 🤝 Contribuindo
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+Contribuições são sempre bem-vindas! Sinta-se à vontade para abrir issues ou enviar pull requests.
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+## 📝 Licença
+
+Este projeto está sob a licença MIT. Veja o arquivo [LICENSE](LICENSE) para mais detalhes.
+
+# 🧑🏻‍💻 Autor
+
+Feito com ❤️ por Gelzieny R. Martins 👋🏽 [Entre em contato!](https://gelzieny-dev.vercel.app/)
+
+---
+
+<p align="center">
+⭐ Se este projeto foi útil, considere dar uma estrela!
+</p>
